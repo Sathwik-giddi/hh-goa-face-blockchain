@@ -8,9 +8,9 @@ def anchor(fingerprint: str, payload: dict, chain_file="chain.json"):
         from .blockchain_evm import anchor_evm
         r = anchor_evm(fingerprint, payload)
         if r.get("error"):
-            print(f"[blockchain] EVM failed: {r['error']} — falling back to local so you stay $0 and green")
-            return anchor_local(fingerprint, payload, chain_file)
+            raise RuntimeError(f"EVM anchor failed (LIVE mode, no fallback): {r['error']}")
         return r
+    # LIVE local still enforces persistence: no silent mock
     return anchor_local(fingerprint, payload, chain_file)
 
 def verify(fingerprint: str, chain_file="chain.json"):

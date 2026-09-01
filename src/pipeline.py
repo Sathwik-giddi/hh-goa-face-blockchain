@@ -25,9 +25,8 @@ def run_pipeline(image: str | Path, out_dir: str | Path = Path("outputs"), chain
     if verbose:
         print(f"  → engine={face['engine']} faces={face['num_faces']} conf={face.get('conf',0):.2f} crop={face['crop_path']}")
         if face.get("warning"): print(f"  ⚠ {face['warning']}")
-        print(f"  → reddit-aware search (live if SERPAPI_API_KEY set, else mock)...")
 
-    print(f"[2/4] Social search (Google Lens index covers Reddit/X/IG/TikTok)...")
+    print(f"[2/4] Social search LIVE (Google Lens index covers Reddit/X/IG/TikTok)...")
     search = reverse_image_search(face["crop_path"], prefer_source=prefer_source)
     vm = search.get("visual_matches", [])
     top = search.get("top_match")

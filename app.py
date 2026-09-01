@@ -57,9 +57,9 @@ async def scan(file: UploadFile = File(...)):
         # still proceed for demo, but flag
         pass
 
-    # 2 live search — will raise if no SERPAPI_API_KEY
+    # 2 live search — face re-ranked, tries crop + original
     try:
-        search = reverse_image_search(face["crop_path"])
+        search = reverse_image_search(face["crop_path"], original_path=str(tmp))
     except Exception as e:
         raise HTTPException(500, f"Live search failed: {e}. Set SERPAPI_API_KEY in .env (free 250 at serpapi.com)")
 

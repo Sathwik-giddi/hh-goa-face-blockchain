@@ -26,16 +26,19 @@ def run_pipeline(image: str | Path, out_dir: str | Path = Path("outputs"), chain
         print(f"  → engine={face['engine']} faces={face['num_faces']} conf={face.get('conf',0):.2f} crop={face['crop_path']}")
         if face.get("warning"): print(f"  ⚠ {face['warning']}")
 
-    print(f"[2/4] Social search LIVE (Google Lens index covers Reddit/X/IG/TikTok)...")
-    search = reverse_image_search(face["crop_path"], prefer_source=prefer_source)
+    print(f"[2/4] Social search LIVE (Lens + face re-rank covers any public face, not just celebs)...")
+    search = reverse_image_search(face["crop_path"], original_path=str(image), prefer_source=prefer_source)
     vm = search.get("visual_matches", [])
     top = search.get("top_match")
     if verbose:
-        print(f"  → mode={search['mode']} hits={len(vm)} reddit_found={search.get('reddit_found')} ")
+        print(f"  → mode={search['mode']} hits={len(vm)} (face-similar {search.get('face_similar_count')}/{len(search.get('all_hits',[]))}) reddit_found={search.get('reddit_found')} ")
         if top:
-            print(f"  → top: [{top.get('source')}] {top.get('title')[:80]} → {top.get('link')}")
+            dist = top.get("_face_distance", "?")
+            print(f"  → top: [{top.get('source')}] face_dist={dist} {top.get('title')[:80]} → {top.get('link')}")
         else:
             print("  → no hits")
+        if search.get('face_similar_count')==0:
+            print("  ⚠ No face-similar hits — this face may have no public copy. Showing closest visual only (not same person).")
 
     print(f"[3/4] Fingerprint + blockchain ({os.getenv('BLOCKCHAIN_MODE','local')})")
     post = top or {"link": "", "title": "", "source": "", "thumbnail": ""}

@@ -35,7 +35,7 @@ def anchor_evm(fingerprint: str, payload: dict):
 
     try:
         nonce = w3.eth.get_transaction_count(acct.address)
-        tx = {"to": acct.address, "value": 0, "data": data_hex, "nonce": nonce, "gas": 50000, "chainId": chain_id, "maxFeePerGas": w3.to_wei("50", "gwei"), "maxPriorityFeePerGas": w3.to_wei("2", "gwei")}
+        tx = {"to": acct.address, "value": 0, "data": data_hex, "nonce": nonce, "gas": 50000, "chainId": chain_id, "maxFeePerGas": w3.to_wei("60", "gwei"), "maxPriorityFeePerGas": w3.to_wei("30", "gwei")}
         signed = acct.sign_transaction(tx)
         h = w3.eth.send_raw_transaction(signed.raw_transaction)
         receipt = w3.eth.wait_for_transaction_receipt(h, timeout=60)

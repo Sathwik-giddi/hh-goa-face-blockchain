@@ -96,5 +96,41 @@
       "reddit_found": true
     },
     "hash": "7b5c20302ed054612414f36c8fbc83a6206af38beddef9df5570923e71623906"
+  },
+  {
+    "index": 4,
+    "timestamp": "2026-09-01T16:35:22.384232+00:00",
+    "prev_hash": "7b5c20302ed054612414f36c8fbc83a6206af38beddef9df5570923e71623906",
+    "data_hash": "95ececde5b8165d60b07e732820adbfc856ec014330df9f3ec2a66f46988b59c",
+    "data": {
+      "fingerprint": "00ee265f205a0d0afd76120faf7cbda6e5b93d183af5ff1c771aedfc8f748918",
+      "post": {
+        "position": 23,
+        "title": "lena.jpg now : r/programming",
+        "link": "https://www.reddit.com/r/programming/comments/dobz8s/lenajpg_now/",
+        "source": "Reddit",
+        "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcRFeJS-IhfJCysoVmCqJ1d-1lzbIHTsbcy4DrBsZJpxQ31zznhym7THnNEKCEnngpvdl4aupEFtEblIPBEMJY7_biy055d40m6TYfVg7CpFOrWOXw",
+        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMO9Aqa0bNKSScKlsubOe3UguSIMBJmFJm8C9WSEKTX7jFt8H7",
+        "thumbnail_width": 162,
+        "thumbnail_height": 310,
+        "image": "https://external-preview.redd.it/now-v0-kbjCKR20djbJWEdB4jhocgtbGZ_UO3uc9b7sXlAZ2EA.jpg?auto=webp&s=fcc76b84b2023c399f302714f0973b68d1787e90",
+        "image_width": 263,
+        "image_height": 502
+      },
+      "face": {
+        "engine": "opencv:haar",
+        "conf": 0.8179031372070312,
+        "bbox": [
+          219,
+          203,
+          169,
+          169
+        ],
+        "embedding_hash": "a2986984b56a0839"
+      },
+      "search_mode": "live",
+      "reddit_found": true
+    },
+    "hash": "b6bdb8a0881a2a50af68b083cca72a50aa530f7c420bb77220394ef7ab1bf001"
   }
 ]

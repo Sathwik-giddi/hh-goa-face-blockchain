@@ -1,0 +1,20 @@
+# $0 Mac-native stack — no paid APIs, no GPU, no dlib build hell
+opencv-python==4.10.0.84
+numpy>=1.24
+requests>=2.31
+python-dotenv>=1.0
+Pillow>=10.0
+tqdm>=4.66
+
+# Optional: uncomment for better face embeddings (free, local)
+# deepface>=0.0.93
+# tf-keras>=2.15
+# tensorflow>=2.15
+
+# Optional: real blockchain (Polygon Amoy) — free faucet
+# web3>=6.11
+# eth-account>=0.10
+
+# Search: SerpAPI free 250/mo (no card on trial)
+# To use: pip install google-search-results
+# google-search-results>=2.4

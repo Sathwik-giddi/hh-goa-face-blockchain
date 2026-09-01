@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+chain.json
+*.log
+.DS_Store
+data/input/*
+!data/input/.gitkeep
+data/output/*
+!data/output/.gitkeep
+outputs/*
+!outputs/.gitkeep
+temp/
+node_modules/

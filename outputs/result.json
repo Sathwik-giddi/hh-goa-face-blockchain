@@ -27,39 +27,76 @@
     "mode": "live",
     "reddit_found": true,
     "top_match": {
-      "position": 25,
-      "title": "TIL that a cropped 512x512 image of Playboy model Lena ...",
-      "link": "https://www.reddit.com/r/todayilearned/comments/1je7ab/til_that_a_cropped_512x512_image_of_playboy_model/",
+      "position": 42,
+      "title": "In 1973, a photo of a Swedish Playboy model named Lena (left ...",
+      "link": "https://www.reddit.com/r/pics/comments/erqtr5/in_1973_a_photo_of_a_swedish_playboy_model_named/",
       "source": "Reddit",
       "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcRFeJS-IhfJCysoVmCqJ1d-1lzbIHTsbcy4DrBsZJpxQ31zznhym7THnNEKCEnngpvdl4aupEFtEblIPBEMJY7_biy055d40m6TYfVg7CpFOrWOXw",
-      "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQh1htGLbQ9O49qOV23EyaspW8_UTOt9lXrz34G0faejaQasAOh",
-      "thumbnail_width": 140,
-      "thumbnail_height": 140,
-      "image": "https://b.thumbs.redditmedia.com/qaALvHEqN1DrZLVsrylsxaILHbm2dNa_Y1R59L1soxw.jpg",
-      "image_width": 140,
-      "image_height": 140
+      "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeZkuQ3HWGxMyAyVhd0Od81Ev0OL8QrqZB1pGcYgpEa4DN42JR",
+      "thumbnail_width": 157,
+      "thumbnail_height": 321,
+      "image": "https://external-preview.redd.it/in-1973-a-photo-of-a-swedish-playboy-model-named-lena-left-v0-z7bX36rEY_hrOBPag5ayauV2DrqQr7mMSM44AIgk1_U.jpg?auto=webp&s=e136a7106d9a2ae6307790024fe8ec81fb48df65",
+      "image_width": 858,
+      "image_height": 1751,
+      "_face_distance": 23
     },
-    "num_hits": 59
+    "num_hits": 20
   },
   "fingerprint": {
-    "url": "https://www.reddit.com/r/todayilearned/comments/1je7ab/til_that_a_cropped_512x512_image_of_playboy_model/",
-    "title": "TIL that a cropped 512x512 image of Playboy model Lena ...",
+    "url": "https://www.reddit.com/r/pics/comments/erqtr5/in_1973_a_photo_of_a_swedish_playboy_model_named/",
+    "title": "In 1973, a photo of a Swedish Playboy model named Lena (left ...",
     "source": "Reddit",
-    "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQh1htGLbQ9O49qOV23EyaspW8_UTOt9lXrz34G0faejaQasAOh",
+    "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeZkuQ3HWGxMyAyVhd0Od81Ev0OL8QrqZB1pGcYgpEa4DN42JR",
     "image_sha256": "cd9354d121c5ad35faa8baba055d4e9783ab751de357d9dc5e9d56d963ff742f",
-    "fingerprint_sha256": "af8c2a3634143b6e62e869a7172d577c85c20197e2fffeb27602d830b11071a9",
-    "created_at": "2026-09-01T16:36:08.593118+00:00"
+    "fingerprint_sha256": "e84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
+    "created_at": "2026-09-01T17:28:06.526870+00:00"
   },
   "receipt": {
     "mode": "evm",
-    "txHash": "3614246a1b1676ec67d480212ef55a18473779b8b1864fa7b8b313609784b0ad",
-    "blockNumber": 46462130,
-    "explorerUrl": "https://amoy.polygonscan.com/tx/3614246a1b1676ec67d480212ef55a18473779b8b1864fa7b8b313609784b0ad",
-    "data_hex": "0xaf8c2a3634143b6e62e869a7172d577c85c20197e2fffeb27602d830b11071a9",
+    "txHash": "7b8372b56e7acaddf4cb5850727d56ae7b7f8d65d3f2d12545013ab9815f75ff",
+    "blockNumber": 46465249,
+    "explorerUrl": "https://amoy.polygonscan.com/tx/7b8372b56e7acaddf4cb5850727d56ae7b7f8d65d3f2d12545013ab9815f75ff",
+    "data_hex": "0xe84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
     "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb"
   },
   "verify": {
-    "verified": null,
-    "note": "For tx.data anchoring, verify via amoy.polygonscan.com/tx/<txHash> \u2192 Input Data == fingerprint. Contract mapping verify would be w3.eth.call."
+    "verified": true,
+    "txHash": "7b8372b56e7acaddf4cb5850727d56ae7b7f8d65d3f2d12545013ab9815f75ff",
+    "blockNumber": 46465249,
+    "explorerUrl": "https://amoy.polygonscan.com/tx/7b8372b56e7acaddf4cb5850727d56ae7b7f8d65d3f2d12545013ab9815f75ff",
+    "on_chain_input": "0xe84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
+    "expected_input": "0xe84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
+    "payload": {
+      "fingerprint": "e84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
+      "payload": {
+        "post": {
+          "position": 42,
+          "title": "In 1973, a photo of a Swedish Playboy model named Lena (left ...",
+          "link": "https://www.reddit.com/r/pics/comments/erqtr5/in_1973_a_photo_of_a_swedish_playboy_model_named/",
+          "source": "Reddit",
+          "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcRFeJS-IhfJCysoVmCqJ1d-1lzbIHTsbcy4DrBsZJpxQ31zznhym7THnNEKCEnngpvdl4aupEFtEblIPBEMJY7_biy055d40m6TYfVg7CpFOrWOXw",
+          "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeZkuQ3HWGxMyAyVhd0Od81Ev0OL8QrqZB1pGcYgpEa4DN42JR",
+          "thumbnail_width": 157,
+          "thumbnail_height": 321,
+          "image": "https://external-preview.redd.it/in-1973-a-photo-of-a-swedish-playboy-model-named-lena-left-v0-z7bX36rEY_hrOBPag5ayauV2DrqQr7mMSM44AIgk1_U.jpg?auto=webp&s=e136a7106d9a2ae6307790024fe8ec81fb48df65",
+          "image_width": 858,
+          "image_height": 1751,
+          "_face_distance": 23
+        },
+        "face": {
+          "engine": "opencv:haar",
+          "conf": 0.8179031372070312,
+          "bbox": [
+            219,
+            203,
+            169,
+            169
+          ],
+          "embedding_hash": "a2986984b56a0839"
+        },
+        "search_mode": "live",
+        "reddit_found": true
+      }
+    }
   }
 }

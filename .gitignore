@@ -15,3 +15,5 @@ outputs/*
 !outputs/.gitkeep
 temp/
 node_modules/
+.env
+evm_mirror.json

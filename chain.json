@@ -132,5 +132,16 @@
       "reddit_found": true
     },
     "hash": "b6bdb8a0881a2a50af68b083cca72a50aa530f7c420bb77220394ef7ab1bf001"
+  },
+  {
+    "index": 5,
+    "timestamp": "2026-09-01T17:19:36.934728+00:00",
+    "prev_hash": "b6bdb8a0881a2a50af68b083cca72a50aa530f7c420bb77220394ef7ab1bf001",
+    "data_hash": "f469fefcb69135405e726121542ebc165cd07f7de6b15f0e2a9377a541ffa41b",
+    "data": {
+      "fingerprint": "e84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
+      "test": true
+    },
+    "hash": "4f573e2f83447d17852e638e241349933007c3d160a4585b97a107a134540c0c"
   }
 ]

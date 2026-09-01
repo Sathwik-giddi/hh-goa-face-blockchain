@@ -1,0 +1,9 @@
+{
+  "url": "https://www.reddit.com/r/pics/comments/example_match/",
+  "title": "Example Match \u2014 Reddit r/pics (mock \u2014 replace with SERPAPI_API_KEY for live)",
+  "source": "Reddit",
+  "thumbnail": "https://via.placeholder.com/300",
+  "image_sha256": "cd9354d121c5ad35faa8baba055d4e9783ab751de357d9dc5e9d56d963ff742f",
+  "fingerprint_sha256": "86e7598852702478c04602237acd50ed78851aa1c7f146e0721076de6dcb680e",
+  "created_at": "2026-09-01T15:54:01.485412+00:00"
+}

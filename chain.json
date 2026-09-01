@@ -1,0 +1,100 @@
+[
+  {
+    "index": 0,
+    "timestamp": "2026-01-01T00:00:00+00:00",
+    "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "data_hash": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718e",
+    "data": {
+      "note": "genesis"
+    },
+    "hash": "dcf865064d9fafdfa18f49f36fe4e997550aefdab32f552f5239b55b3691f828"
+  },
+  {
+    "index": 1,
+    "timestamp": "2026-09-01T15:52:30.266945+00:00",
+    "prev_hash": "dcf865064d9fafdfa18f49f36fe4e997550aefdab32f552f5239b55b3691f828",
+    "data_hash": "d5bc492d9115f26a3b72d05a0140efd4b5e6a396a9a7e435fe609651e62c221f",
+    "data": {
+      "fingerprint": "07da37e57d4da4a5b3738153278eb5d626506f9a8e7f7d7eb47361aad7dfa95b",
+      "post": {
+        "position": 1,
+        "title": "Example Match \u2014 Reddit r/pics (mock \u2014 replace with SERPAPI_API_KEY for live)",
+        "link": "https://www.reddit.com/r/pics/comments/example_match/",
+        "source": "Reddit",
+        "thumbnail": "https://via.placeholder.com/300",
+        "source_icon": "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png"
+      },
+      "face": {
+        "engine": "opencv:haar",
+        "conf": 0.0,
+        "bbox": null,
+        "embedding_hash": "430840f24433b4d5"
+      },
+      "search_mode": "mock",
+      "reddit_found": true
+    },
+    "hash": "3a95453192e080b95be0275e9a283f573cd0ddf42d586bd14aabcc33af15274a"
+  },
+  {
+    "index": 2,
+    "timestamp": "2026-09-01T15:52:37.514308+00:00",
+    "prev_hash": "3a95453192e080b95be0275e9a283f573cd0ddf42d586bd14aabcc33af15274a",
+    "data_hash": "7a58cd154548ef886ed38189ddc1bf971b54878b75494f80578f664ee8754e24",
+    "data": {
+      "fingerprint": "86e7598852702478c04602237acd50ed78851aa1c7f146e0721076de6dcb680e",
+      "post": {
+        "position": 1,
+        "title": "Example Match \u2014 Reddit r/pics (mock \u2014 replace with SERPAPI_API_KEY for live)",
+        "link": "https://www.reddit.com/r/pics/comments/example_match/",
+        "source": "Reddit",
+        "thumbnail": "https://via.placeholder.com/300",
+        "source_icon": "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png"
+      },
+      "face": {
+        "engine": "opencv:haar",
+        "conf": 0.8179031372070312,
+        "bbox": [
+          219,
+          203,
+          169,
+          169
+        ],
+        "embedding_hash": "a2986984b56a0839"
+      },
+      "search_mode": "mock",
+      "reddit_found": true
+    },
+    "hash": "e32f7b69b24a0a53cb15cd2cfac20ea4970c6763885c94047ada4ffedeeadfd2"
+  },
+  {
+    "index": 3,
+    "timestamp": "2026-09-01T15:54:01.485694+00:00",
+    "prev_hash": "e32f7b69b24a0a53cb15cd2cfac20ea4970c6763885c94047ada4ffedeeadfd2",
+    "data_hash": "7a58cd154548ef886ed38189ddc1bf971b54878b75494f80578f664ee8754e24",
+    "data": {
+      "fingerprint": "86e7598852702478c04602237acd50ed78851aa1c7f146e0721076de6dcb680e",
+      "post": {
+        "position": 1,
+        "title": "Example Match \u2014 Reddit r/pics (mock \u2014 replace with SERPAPI_API_KEY for live)",
+        "link": "https://www.reddit.com/r/pics/comments/example_match/",
+        "source": "Reddit",
+        "thumbnail": "https://via.placeholder.com/300",
+        "source_icon": "https://www.redditstatic.com/desktop2x/img/favicon/android-icon-192x192.png"
+      },
+      "face": {
+        "engine": "opencv:haar",
+        "conf": 0.8179031372070312,
+        "bbox": [
+          219,
+          203,
+          169,
+          169
+        ],
+        "embedding_hash": "a2986984b56a0839"
+      },
+      "search_mode": "mock",
+      "reddit_found": true
+    },
+    "hash": "7b5c20302ed054612414f36c8fbc83a6206af38beddef9df5570923e71623906"
+  }
+]

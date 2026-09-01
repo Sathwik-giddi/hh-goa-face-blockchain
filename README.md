@@ -24,14 +24,17 @@ All live on your Mac for **$0**. No faucet purchase, no card. Spec-allowed `loca
 # 1. Install (Mac, $0)
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+pip install web3 eth-account fastapi uvicorn python-multipart  # for live chain + frontend
 
 # 2. Get free Lens key (250/mo, email only, 30s) at https://serpapi.com/users/sign_up
 cp .env.example .env
 # edit .env: SERPAPI_API_KEY=your_key_here
-# (or leave empty to demo mock wiring)
 
-# 3. Run (lena sample included — Haar-detectable, real face)
+# 3a. CLI (lena sample included — Haar-detectable, real face)
 python -m src.pipeline --image data/samples/lena.jpg --out outputs --chain chain.json
+# 3b. 10/10 Frontend (forensic light-table, gold shimmer, scanline, live verify)
+uvicorn app:app --host 127.0.0.1 --port 8000 --reload
+# open http://127.0.0.1:8000 — drag face → live scan → Reddit hit → Amoy tx
 
 # Outputs for recording:
 # outputs/face_crop.jpg  outputs/search_raw.json  outputs/evidence.json  outputs/receipt.json  outputs/result.json  chain.json

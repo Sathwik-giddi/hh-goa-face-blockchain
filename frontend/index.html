@@ -165,9 +165,9 @@ scanBtn.addEventListener('click', async()=>{
     if(f.crop_path) crop.src='/'+f.crop_path+'?t='+Date.now();
     // social — now face-aware
     const s=j.search; redditBadge.classList.toggle('hidden', !s.reddit_found);
-    const fd = s.top._face_distance ?? '?';
-    const fdNote = s.top._face_distance!=null ? `face dist ${fd} (0=identical, <28 face-similar)` : 'no thumbnail face';
-    socialBox.innerHTML=`<div class="text-white">Top <span class="text-gold">${s.top.source}</span> — ${s.top.title.slice(0,80)}</div><a href="${s.top.link}" target="_blank" class="text-xs text-cyan hover:underline break-all">${s.top.link}</a><div class="text-xs text-white/40 mt-1">${fdNote} · hits ${s.num_hits} · mode ${s.mode}</div>`;
+    const faceDist = s.top._face_distance ?? null;
+    const faceDistStr = faceDist!=null ? `face dist ${faceDist} (0=identical, <28 face-similar)` : 'no thumbnail face';
+    socialBox.innerHTML=`<div class="text-white">Top <span class="text-gold">${s.top.source}</span> — ${s.top.title.slice(0,80)}</div><a href="${s.top.link}" target="_blank" class="text-xs text-cyan hover:underline break-all">${s.top.link}</a><div class="text-xs text-white/40 mt-1">${faceDistStr} · hits ${s.num_hits} · mode ${s.mode}</div>`;
     if(s.num_hits && s.hits[0]?._face_distance==null && s.num_hits>0) {
       hits.innerHTML=`<div class="rounded border border-amber-500/20 bg-amber-500/10 p-2 text-xs">⚠ This face has no public indexed copy — Lens returned mostly generic stock. Upload a face that is posted publicly (IG/X/Reddit) for exact match. Showing closest face-similar.</div>` + s.hits.map(h=>`<div class="rounded border border-line bg-ink/60 p-2 flex gap-2"><img src="${h.thumbnail}" class="w-12 h-12 object-cover rounded"/> <div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${h.title.slice(0,64)}</div><div class="text-xs text-white/40">${h.source} · ${h._face_distance!=null?'face '+h._face_distance:'no face'}</div><a href="${h.link}" target="_blank" class="text-xs text-cyan">open</a></div></div>`).join('');
     } else {

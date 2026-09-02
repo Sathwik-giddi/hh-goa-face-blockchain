@@ -51,7 +51,7 @@ tailwind.config={theme:{extend:{
       </label>
       <div id="previewWrap" class="hidden mt-4 grid grid-cols-2 gap-3">
         <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="preview" alt="upload preview" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Source</div></div>
-        <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="crop" alt="face crop" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Detected face</div></div>
+        <div id="cropWrap" class="hidden rounded-lg overflow-hidden border border-line bg-slate-50"><img id="crop" alt="detected face crop" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Detected face</div></div>
       </div>
       <button id="scanBtn" class="mt-4 w-full h-11 rounded-lg bg-accent text-white font-semibold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Run pipeline</button>
       <div id="status" class="mt-2 text-xs font-mono text-muted min-h-[1.25em]"></div>
@@ -111,7 +111,7 @@ tailwind.config={theme:{extend:{
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
-const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), previewWrap=$('#previewWrap'), crop=$('#crop'), scanBtn=$('#scanBtn'), status=$('#status');
+const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), previewWrap=$('#previewWrap'), crop=$('#crop'), cropWrap=$('#cropWrap'), scanBtn=$('#scanBtn'), status=$('#status');
 const faceBox=$('#faceBox'), faceMeta=$('#faceMeta'), socialBox=$('#socialBox'), hits=$('#hits'), redditBadge=$('#redditBadge'), chainBox=$('#chainBox'), receiptEl=$('#receipt');
 const verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'), heightEl=$('#height'), chainList=$('#chainList'), health=$('#health');
 
@@ -179,7 +179,10 @@ function showPreview(file){
   if(previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl=null; }
   previewUrl = URL.createObjectURL(file);
   preview.src = previewUrl;
+  cropWrap.classList.add('hidden');
   previewWrap.classList.remove('hidden');
+  previewWrap.classList.remove('grid-cols-2');
+  previewWrap.classList.add('grid-cols-1');
 }
 drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('border-accent/50','bg-accentSoft/40'); });
 drop.addEventListener('dragleave', ()=>drop.classList.remove('border-accent/50','bg-accentSoft/40'));
@@ -239,7 +242,11 @@ scanBtn.addEventListener('click', async()=>{
     faceBox.appendChild(el('div',{class:'text-xs text-muted mt-1 font-mono', text:`pHash ${f.embedding_hash}`}));
   }
   if(f.crop_path){
+    crop.onload = () => { cropWrap.classList.remove('hidden'); previewWrap.classList.add('grid-cols-2'); };
+    crop.onerror = () => cropWrap.classList.add('hidden');
     crop.src = '/'+f.crop_path+'?t='+Date.now();
+  } else {
+    cropWrap.classList.add('hidden');
   }
   if(f.warning){
     faceBox.appendChild(el('div',{class:'text-xs text-warn mt-1', text:'⚠ '+f.warning}));

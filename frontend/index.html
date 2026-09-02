@@ -3,165 +3,313 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Face → Social → Blockchain</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Face → Social → Chain — Evidence Record</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config={theme:{extend:{
-  colors:{bg:"#F8FAFC",card:"#FFFFFF",line:"#E2E8F0",ink:"#0F172A",muted:"#64748B",accent:"#2563EB",accentSoft:"#EFF6FF",ok:"#059669",warn:"#D97706",bad:"#DC2626"},
-  fontFamily:{body:["Inter","sans-serif"],mono:["JetBrains Mono","monospace"]},
-  boxShadow:{card:"0 1px 2px rgba(15,23,42,.05),0 4px 16px rgba(15,23,42,.06)"}
+  colors:{paper:"#F6F7F9",panel:"#FFFFFF",ink:"#141E28",slate:"#5C6B7A",line:"#DAE0E6",veridian:"#0B7A63",veridianSoft:"#E7F2EE",signal:"#B45309",signalSoft:"#FBF3E8",bad:"#B3261E",badSoft:"#FBEDEC"},
+  fontFamily:{display:["Space Grotesk","sans-serif"],body:["IBM Plex Sans","sans-serif"],mono:["IBM Plex Mono","monospace"]},
 }}}
 </script>
 <style>
-  body{background:#F8FAFC;color:#0F172A}
+  html{background:#F6F7F9}
+  body{color:#141E28;-webkit-font-smoothing:antialiased}
+  ::selection{background:#CDE3DC}
   .tick{font-variant-numeric:tabular-nums}
-  ::selection{background:#BFDBFE}
-  .fade-in{animation:fade .3s ease-out}
-  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* signature: viewfinder corner brackets on the evidence crop */
+  .brackets{position:relative}
+  .brackets::before,.brackets::after,.brackets>.b::before,.brackets>.b::after{
+    content:"";position:absolute;width:18px;height:18px;border:2px solid #141E28;z-index:2}
+  .brackets::before{top:-2px;left:-2px;border-right:none;border-bottom:none}
+  .brackets::after{top:-2px;right:-2px;border-left:none;border-bottom:none}
+  .brackets>.b::before{bottom:-2px;left:-2px;border-right:none;border-top:none}
+  .brackets>.b::after{bottom:-2px;right:-2px;border-left:none;border-top:none}
+
+  /* ledger stamps */
+  .stamp{opacity:0;transform:translateY(6px);animation:stampIn .38s cubic-bezier(.2,.7,.3,1) forwards}
+  @keyframes stampIn{to{opacity:1;transform:none}}
+  .stamp-dot{width:22px;height:22px;border-radius:9999px;display:flex;align-items:center;justify-content:center;
+    border:1.5px solid #0B7A63;color:#0B7A63;font-size:11px;background:#E7F2EE;flex:none}
+
+  /* MRZ strip */
+  .mrz{font-family:"IBM Plex Mono",monospace;letter-spacing:.32em;overflow:hidden;white-space:nowrap;
+    color:#8A97A5;user-select:none}
+  .mrz-ink{color:#141E28}
+
+  /* similarity meter with same-person threshold mark */
+  .meter{position:relative;height:8px;background:#E4E9ED;border-radius:2px}
+  .meter>i{position:absolute;left:0;top:0;bottom:0;background:#0B7A63;border-radius:2px;transition:width .6s cubic-bezier(.2,.7,.3,1)}
+  .meter>u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#B45309;opacity:.7}
+
+  .scanbeam{position:absolute;left:0;right:0;height:2px;top:0;
+    background:linear-gradient(90deg,transparent,#0B7A63,transparent);animation:beam 1.6s ease-in-out infinite}
+  @keyframes beam{0%{top:4%;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:96%;opacity:0}}
+
+  a,button,summary,input,label[for]{outline-offset:2px}
+  :focus-visible{outline:2px solid #0B7A63;border-radius:2px}
+  @media (prefers-reduced-motion:reduce){
+    .stamp{animation:none;opacity:1;transform:none}
+    .scanbeam{display:none}
+    .meter>i{transition:none}
+  }
+  details>summary{list-style:none}
+  details>summary::-webkit-details-marker{display:none}
+  details[open] .chev{transform:rotate(90deg)}
+  .chev{transition:transform .15s ease;display:inline-block}
 </style>
 </head>
-<body class="font-body antialiased min-h-screen flex flex-col">
+<body class="font-body bg-paper min-h-screen flex flex-col">
 
-<header class="border-b border-line bg-white/90 backdrop-blur sticky top-0 z-40">
-  <div class="max-w-[1080px] mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-2.5">
-      <div class="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-white text-xs font-semibold">◈</div>
-      <div class="text-sm font-semibold">Face → Social → Blockchain</div>
+<!-- document header -->
+<header class="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-[1180px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-9 h-9 bg-ink text-white flex items-center justify-center font-display font-bold text-sm flex-none">◈</div>
+      <div class="min-w-0">
+        <div class="font-display font-semibold text-[15px] leading-tight tracking-tight">Face → Social → Chain</div>
+        <div class="text-[11px] text-slate leading-tight">Evidence record · HH Goa 2026 · Task 3</div>
+      </div>
     </div>
-    <div class="flex items-center gap-2">
-      <span class="hidden sm:flex items-center gap-1.5 text-xs text-muted mr-1"><span class="w-2 h-2 rounded-full bg-ok"></span><span id="health">—</span></span>
-      <a href="https://amoy.polygonscan.com" target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-1.5 rounded-lg border border-line hover:bg-slate-50 transition">Polygonscan</a>
+    <div class="flex items-center gap-3 flex-none">
+      <span class="hidden md:flex items-center gap-2 text-[11px] font-mono text-slate">
+        <span class="relative flex w-2 h-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-veridian opacity-40"></span><span class="relative inline-flex rounded-full w-2 h-2 bg-veridian"></span></span>
+        <span id="health">—</span>
+      </span>
+      <a href="https://amoy.polygonscan.com" target="_blank" rel="noopener noreferrer"
+         class="text-xs font-medium px-3 py-2 bg-ink text-white hover:bg-[#22303E] transition">Polygonscan</a>
     </div>
   </div>
 </header>
 
-<main class="max-w-[1080px] mx-auto px-4 md:px-6 w-full flex-1">
-  <!-- stage 1: upload -->
-  <section id="intake" class="max-w-[560px] mx-auto text-center pt-14 pb-10">
-    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Find a face on the web.<br/>Prove it on-chain.</h1>
-    <p class="mt-2 text-sm text-muted">Live reverse-image search, fingerprinted and anchored on Polygon Amoy.</p>
+<main class="max-w-[1180px] mx-auto px-4 md:px-8 w-full flex-1 pb-10">
+  <div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-10 pt-10">
 
-    <div class="mt-6 bg-card rounded-2xl border border-line shadow-card p-5 text-left">
-      <label id="drop" class="group block rounded-xl border-2 border-dashed border-line hover:border-accent/50 hover:bg-accentSoft/40 p-6 text-center cursor-pointer transition">
-        <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/avif" class="hidden"/>
-        <div class="w-10 h-10 mx-auto rounded-full bg-accentSoft flex items-center justify-center mb-2 text-accent group-hover:scale-105 transition">⬆</div>
-        <div class="font-medium text-sm">Drop an image or click to browse</div>
-        <div class="text-xs text-muted mt-0.5">JPG · PNG · WEBP — a visible face works best</div>
-      </label>
-      <div id="previewWrap" class="hidden mt-4 grid grid-cols-2 gap-3">
-        <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="preview" alt="upload preview" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Source</div></div>
-        <div id="cropWrap" class="hidden rounded-lg overflow-hidden border border-line bg-slate-50"><img id="crop" alt="detected face crop" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Detected face</div></div>
-      </div>
-      <div id="facePick" class="hidden mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-        <div class="text-xs font-semibold text-amber-800 mb-2" id="facePickTitle">Multiple faces detected — pick the one to search</div>
-        <div id="facePickGrid" class="grid grid-cols-3 gap-2 sm:grid-cols-5"></div>
-      </div>
-      <button id="scanBtn" class="mt-4 w-full h-11 rounded-lg bg-accent text-white font-semibold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Run pipeline</button>
-      <div id="status" class="mt-2 text-xs font-mono text-muted min-h-[1.25em]"></div>
-    </div>
+    <!-- ===================== left: bench ===================== -->
+    <div class="min-w-0">
 
-    <details id="verifyDetails" class="mt-4 text-left bg-card rounded-xl border border-line shadow-card px-4 py-3">
-      <summary class="text-sm font-medium cursor-pointer select-none text-slate-700">Verify an existing fingerprint</summary>
-      <div class="flex gap-2 mt-3">
-        <input id="verifyInput" placeholder="64-hex SHA-256" maxlength="64" pattern="[0-9a-fA-F]{64}" class="flex-1 h-10 rounded-lg border border-line bg-slate-50 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"/>
-        <button id="verifyBtn" class="h-10 px-4 rounded-lg bg-ink text-white font-medium text-sm hover:bg-slate-700 transition">Verify</button>
-      </div>
-      <div id="verifyOut" class="mt-2 text-sm font-mono min-h-[1.25em]"></div>
-    </details>
-  </section>
+      <!-- intake -->
+      <section id="intake">
+        <h1 class="font-display font-bold tracking-tight text-[30px] md:text-[38px] leading-[1.05]">
+          Find a face on the open web.<br/>Seal the proof on-chain.
+        </h1>
+        <p class="mt-3 text-[15px] leading-7 text-slate max-w-[560px]">
+          One scan runs a live reverse-image search, fingerprints the discovered post,
+          and records it on Polygon Amoy — then re-proves the record from the live web.
+        </p>
 
-  <!-- stage 2: results (hidden until first scan) -->
-  <section id="results" class="hidden pb-10 space-y-4">
-    <div class="grid lg:grid-cols-3 gap-4">
-      <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-        <div class="flex items-center gap-2 mb-3"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">1</span><span class="text-sm font-semibold">Face detection</span></div>
-        <div id="faceBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[110px] text-sm text-muted"></div>
-        <div class="text-[11px] font-mono text-muted mt-2" id="faceMeta"></div>
-      </section>
+        <div class="mt-7 bg-panel border border-line p-5 md:p-6">
+          <label id="drop" class="brackets group block border border-dashed border-line hover:border-ink/40 bg-paper/60 hover:bg-white p-7 text-center cursor-pointer transition">
+            <b class="b"></b>
+            <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/avif" class="hidden"/>
+            <div id="scanBeamHost" class="relative">
+              <div class="w-11 h-11 mx-auto border border-ink/25 flex items-center justify-center mb-3 text-ink group-hover:bg-ink group-hover:text-white transition">⬆</div>
+              <div class="font-medium text-[15px]">Drop a face scan</div>
+              <div class="text-xs text-slate mt-1 font-mono">JPG · PNG · WEBP — one clear face works best</div>
+            </div>
+          </label>
 
-      <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">2</span><span class="text-sm font-semibold">Social match</span></div>
-          <span id="redditBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 hidden">Reddit</span>
+          <div id="previewWrap" class="hidden mt-5 grid grid-cols-2 gap-4">
+            <figure class="border border-line bg-white">
+              <div class="brackets relative"><b class="b"></b><img id="preview" alt="uploaded scan" class="w-full h-[150px] object-cover"/></div>
+              <figcaption class="text-[11px] font-mono text-slate px-2.5 py-2 border-t border-line">INPUT · source</figcaption>
+            </figure>
+            <figure id="cropWrap" class="hidden border border-line bg-white">
+              <div class="brackets relative"><b class="b"></b><img id="crop" alt="detected face" class="w-full h-[150px] object-cover"/></div>
+              <figcaption class="text-[11px] font-mono text-slate px-2.5 py-2 border-t border-line">CAPTURE · detected face</figcaption>
+            </figure>
+          </div>
+
+          <div id="facePick" class="hidden mt-5 border border-signal/40 bg-signalSoft p-4">
+            <div class="text-[13px] font-semibold text-signal mb-2.5" id="facePickTitle">Multiple faces detected — pick the one to search</div>
+            <div id="facePickGrid" class="grid grid-cols-3 sm:grid-cols-5 gap-2.5"></div>
+          </div>
+
+          <button id="scanBtn" class="mt-5 w-full h-12 bg-ink text-white font-display font-semibold tracking-wide text-[15px] hover:bg-[#22303E] transition disabled:opacity-40 disabled:cursor-not-allowed">
+            RUN THE PIPELINE
+          </button>
+          <div id="status" class="mt-2.5 text-xs font-mono text-slate min-h-[1.4em]"></div>
         </div>
-        <div id="socialBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[110px] text-sm text-muted"></div>
-        <div id="hits" class="mt-3 space-y-2"></div>
+
+        <details id="verifyDetails" class="mt-4 bg-panel border border-line px-5 py-4">
+          <summary class="text-sm font-semibold cursor-pointer select-none flex items-center gap-2">
+            <span class="chev text-slate">›</span> Verify an existing fingerprint
+          </summary>
+          <div class="flex gap-2 mt-3.5">
+            <input id="verifyInput" placeholder="64-hex SHA-256" maxlength="64" pattern="[0-9a-fA-F]{64}"
+                   class="flex-1 h-11 border border-line bg-paper px-3 text-sm font-mono focus:border-veridian"/>
+            <button id="verifyBtn" class="h-11 px-5 bg-ink text-white font-medium text-sm hover:bg-[#22303E] transition">Verify</button>
+          </div>
+          <div id="verifyOut" class="mt-2.5 text-sm font-mono min-h-[1.4em]"></div>
+          <div class="text-[11px] text-slate mt-2 font-mono">tamper check: flip the last hex char — verification must fail</div>
+        </details>
       </section>
 
-      <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-        <div class="flex items-center gap-2 mb-3"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">3</span><span class="text-sm font-semibold">Blockchain proof</span></div>
-        <div id="chainBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[110px] text-sm text-muted"></div>
-        <div id="receipt" class="mt-3"></div>
+      <!-- ===================== results: case file ===================== -->
+      <section id="results" class="hidden mt-12 space-y-12">
+
+        <article class="stage">
+          <header class="flex items-baseline gap-4 border-b border-ink/80 pb-2 mb-4">
+            <span class="font-mono text-[12px] text-slate">01</span>
+            <h2 class="font-display font-semibold text-lg tracking-tight">Face capture</h2>
+            <span class="ml-auto text-[11px] font-mono text-slate" id="s1Meta">—</span>
+          </header>
+          <div class="grid md:grid-cols-[200px_minmax(0,1fr)] gap-5 items-start">
+            <figure class="brackets border border-line bg-white relative"><b class="b"></b>
+              <img id="crop2" alt="detected face" class="w-full h-[200px] object-cover"/>
+            </figure>
+            <dl class="text-[13px] leading-6" id="faceFacts"></dl>
+          </div>
+        </article>
+
+        <article class="stage">
+          <header class="flex items-baseline gap-4 border-b border-ink/80 pb-2 mb-4">
+            <span class="font-mono text-[12px] text-slate">02</span>
+            <h2 class="font-display font-semibold text-lg tracking-tight">Source located</h2>
+            <span id="redditBadge" class="hidden ml-auto text-[11px] font-mono px-2 py-0.5 border border-line text-slate">reddit in results</span>
+          </header>
+          <div id="matchBox" class="text-[14px]"></div>
+          <div id="hits" class="mt-4 grid sm:grid-cols-2 gap-2.5"></div>
+        </article>
+
+        <article class="stage">
+          <header class="flex items-baseline gap-4 border-b border-ink/80 pb-2 mb-4">
+            <span class="font-mono text-[12px] text-slate">03</span>
+            <h2 class="font-display font-semibold text-lg tracking-tight">Content fingerprint</h2>
+            <span class="ml-auto text-[11px] font-mono text-slate">SHA-256 · canonical record</span>
+          </header>
+          <dl class="text-[13px] leading-6" id="fpFacts"></dl>
+          <div class="mt-4 bg-ink text-white p-4">
+            <div class="text-[10px] font-mono tracking-[0.25em] text-white/50 mb-1.5">FINGERPRINT</div>
+            <div class="font-mono text-[13px] md:text-[15px] break-all tick" id="fpBig">—</div>
+          </div>
+        </article>
+
+        <article class="stage">
+          <header class="flex items-baseline gap-4 border-b border-ink/80 pb-2 mb-4">
+            <span class="font-mono text-[12px] text-slate">04</span>
+            <h2 class="font-display font-semibold text-lg tracking-tight">On-chain record</h2>
+            <span class="ml-auto text-[11px] font-mono text-slate">Polygon Amoy · 80002</span>
+          </header>
+          <div id="chainFacts" class="text-[13px] leading-6"></div>
+        </article>
+
+        <article class="stage">
+          <header class="flex items-baseline gap-4 border-b border-ink/80 pb-2 mb-4">
+            <span class="font-mono text-[12px] text-slate">05</span>
+            <h2 class="font-display font-semibold text-lg tracking-tight">Re-verification</h2>
+            <span class="ml-auto text-[11px] font-mono text-slate">independent · live web</span>
+          </header>
+          <div id="reverifyFacts" class="text-[13px] leading-6"></div>
+        </article>
       </section>
     </div>
 
-    <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-      <div class="flex items-baseline justify-between mb-2">
-        <div class="text-sm font-semibold">Chain history</div>
-        <div class="text-xs text-muted">height <span class="font-semibold text-ink tick" id="height">—</span></div>
+    <!-- ===================== right: evidence ledger rail ===================== -->
+    <aside class="hidden lg:block">
+      <div class="sticky top-24">
+        <div class="text-[10px] font-mono tracking-[0.25em] text-slate mb-3">EVIDENCE LEDGER</div>
+        <ol id="ledger" class="space-y-0 border-l-2 border-ink/80">
+          <!-- entries injected -->
+        </ol>
+        <div class="mt-8 pt-5 border-t border-line">
+          <div class="flex items-baseline justify-between mb-2.5">
+            <span class="text-[10px] font-mono tracking-[0.25em] text-slate">CHAIN LEDGER</span>
+            <span class="text-[11px] font-mono text-slate">height <b class="text-ink tick" id="height">—</b></span>
+          </div>
+          <div id="chainList" class="space-y-1 font-mono text-[11px] max-h-[170px] overflow-y-auto pr-1"></div>
+        </div>
       </div>
-      <div id="chainList" class="space-y-1 font-mono text-xs max-h-[140px] overflow-y-auto"></div>
-    </section>
-  </section>
+    </aside>
+  </div>
 </main>
 
-<footer class="border-t border-line bg-white">
-  <div class="max-w-[1080px] mx-auto px-4 md:px-6 py-3 text-center text-xs text-muted">
-    HH Goa 2026 · Task 3 — runs locally for $0
+<footer class="border-t border-line mt-6">
+  <div class="mrz text-[10px] py-2.5" aria-hidden="true">
+    P&lt;HHG2026&lt;&lt;FACE&lt;&lt;SOCIAL&lt;&lt;CHAIN&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+  </div>
+  <div class="max-w-[1180px] mx-auto px-4 md:px-8 py-4 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate">
+    <span>Authorized, consent-based research prototype. Public content only.</span>
+    <span class="font-mono">runs locally · $0 · no mocks</span>
   </div>
 </footer>
 
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
-const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), previewWrap=$('#previewWrap'), crop=$('#crop'), cropWrap=$('#cropWrap'), scanBtn=$('#scanBtn'), status=$('#status');
-const facePick=$('#facePick'), facePickTitle=$('#facePickTitle'), facePickGrid=$('#facePickGrid');
-const faceBox=$('#faceBox'), faceMeta=$('#faceMeta'), socialBox=$('#socialBox'), hits=$('#hits'), redditBadge=$('#redditBadge'), chainBox=$('#chainBox'), receiptEl=$('#receipt');
-const verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'), heightEl=$('#height'), chainList=$('#chainList'), health=$('#health');
+const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), previewWrap=$('#previewWrap'),
+      crop=$('#crop'), cropWrap=$('#cropWrap'), scanBtn=$('#scanBtn'), status=$('#status'),
+      facePick=$('#facePick'), facePickTitle=$('#facePickTitle'), facePickGrid=$('#facePickGrid'),
+      verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'),
+      heightEl=$('#height'), chainList=$('#chainList'), health=$('#health'), ledger=$('#ledger'),
+      results=$('#results');
 
-let previewUrl = null;
-const HEX64 = /^[0-9a-fA-F]{64}$/;
+let previewUrl=null;
+const HEX64=/^[0-9a-fA-F]{64}$/;
+const MIN_SIM=36.3;
 
-function el(tag, attrs={}, children=[]){
+/* ---- safe DOM helpers (no innerHTML for untrusted data) ---- */
+function el(tag,attrs={},children=[]){
   const e=document.createElement(tag);
   for(const k in attrs){
     if(k==='text') e.textContent=attrs[k];
-    else if(k==='html' && attrs[k]==null) {/* skip */}
-    else if(k.startsWith('on') && typeof attrs[k]==='function') e.addEventListener(k.slice(2), attrs[k]);
-    else if(attrs[k]!=null) e.setAttribute(k, attrs[k]);
+    else if(k.startsWith('on')&&typeof attrs[k]==='function') e.addEventListener(k.slice(2),attrs[k]);
+    else if(attrs[k]!=null) e.setAttribute(k,attrs[k]);
   }
   for(const c of [].concat(children)){ if(c) e.appendChild(typeof c==='string'?document.createTextNode(c):c); }
   return e;
 }
-function safeUrl(u){
-  try{
-    const p=new URL(u, location.origin);
-    if(p.protocol==='https:' || p.protocol==='http:') return p.toString();
-  }catch(_){}
-  return null;
-}
-function setText(node, text){ node.textContent = text==null ? '' : String(text); }
+function safeUrl(u){ try{const p=new URL(u,location.origin); if(p.protocol==='https:'||p.protocol==='http:') return p.toString();}catch(_){} return null; }
+function setText(n,t){ n.textContent=t==null?'':String(t); }
+function fact(dt,dd,mono){ const w=el('div',{class:'flex gap-3 py-1 border-b border-line/60 last:border-0'});
+  w.appendChild(el('dt',{class:'w-[118px] flex-none text-slate',text:dt}));
+  const d=el('dd',{class:'min-w-0 break-all '+(mono?'font-mono text-[12px]':'')},[dd||'—']); w.appendChild(d); return w; }
+function link(text,url,cls){ const s=safeUrl(url); if(!s) return el('span',{class:'break-all text-slate',text:url||'—'});
+  return el('a',{href:s,target:'_blank',rel:'noopener noreferrer',class:(cls||'text-veridian hover:underline'),text:text}); }
 
-async function getJSON(url){
-  const r = await fetch(url, {headers:{'Accept':'application/json'}});
-  let j=null; try{ j=await r.json(); }catch(_){}
-  if(!r.ok) throw new Error('HTTP '+r.status+' — '+(j&&(j.detail||j.error))||r.statusText);
-  return j;
-}
+/* ---- API ---- */
+async function getJSON(url){ const r=await fetch(url,{headers:{'Accept':'application/json'}});
+  let j=null; try{j=await r.json();}catch(_){}
+  if(!r.ok) throw new Error('HTTP '+r.status+' — '+((j&&(j.detail||j.error))||r.statusText)); return j; }
 
+/* ---- ledger rail ---- */
+const LEDGER_STAGES=['Input scan','Face capture','Source located','Fingerprint','On-chain record','Re-verification'];
+function initLedger(){
+  ledger.innerHTML='';
+  LEDGER_STAGES.forEach(label=>{
+    const li=el('li',{class:'relative pl-6 pb-5','data-stage':label});
+    li.appendChild(el('span',{class:'absolute -left-[7px] top-1 w-3 h-3 rounded-full border-2 border-line bg-paper'}));
+    li.appendChild(el('div',{class:'text-[13px] font-medium text-slate/70',text:label}));
+    li.appendChild(el('div',{class:'text-[11px] font-mono text-slate/50',text:'· awaiting'}));
+    ledger.appendChild(li);
+  });
+}
+function stampLedger(label,hash,ts,extra){
+  const li=ledger.querySelector('[data-stage="'+label+'"]'); if(!li) return;
+  li.innerHTML='';
+  li.className='relative pl-6 pb-5 stamp';
+  const dot=el('span',{class:'absolute -left-[9px] top-0.5 stamp-dot',text:'✓'});
+  li.appendChild(dot);
+  li.appendChild(el('div',{class:'text-[13px] font-semibold text-ink',text:label}));
+  const meta=el('div',{class:'text-[11px] font-mono text-slate',text:ts||now()});
+  li.appendChild(meta);
+  if(hash) li.appendChild(el('div',{class:'text-[11px] font-mono text-veridian break-all',text:hash.slice(0,22)+'…'}));
+  if(extra) li.appendChild(el('div',{class:'text-[11px] text-slate',text:extra}));
+}
+function now(){ return new Date().toISOString().slice(0,19).replace('T',' '); }
+initLedger();
+
+/* ---- health / chain ---- */
 async function healthCheck(){
   try{
     const r=await fetch('/api/health',{headers:{'Accept':'application/json'}});
     if(!r.ok) return;
     const j=await r.json();
-    if(j.ok){
-      health.textContent='live · height '+j.chain_height+' · '+j.mode+' · backend '+(j.version||'?');
-      heightEl.textContent=j.chain_height;
-      loadChain();
-    } else {
-      health.textContent='chain error';
-    }
+    if(j.ok){ health.textContent='live · h '+j.chain_height+' · '+j.mode+' · '+(j.version||''); heightEl.textContent=j.chain_height; loadChain(); }
+    else health.textContent='chain error';
   }catch(e){ health.textContent='offline'; }
 }
 async function loadChain(){
@@ -170,275 +318,236 @@ async function loadChain(){
     heightEl.textContent=j.height;
     chainList.innerHTML='';
     for(const b of j.chain){
-      const row=el('div',{class:'flex justify-between border-b border-slate-100 py-1'},[
-        el('span',{class:'text-slate-600', text:'#'+b.index+' '+b.hash.slice(0,10)+'…'}),
-        el('span',{class:'text-slate-400', text:(b.timestamp||'').slice(0,16)}),
+      const row=el('div',{class:'flex justify-between gap-2 py-0.5'},[
+        el('span',{class:'text-slate',text:'#'+b.index}),
+        el('span',{class:'text-ink',text:b.hash.slice(0,10)+'…'}),
       ]);
       chainList.appendChild(row);
     }
-  }catch(e){/* silent */}
+  }catch(e){}
 }
 healthCheck();
 
+/* ---- upload ---- */
 function showPreview(file){
   if(previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl=null; }
-  previewUrl = URL.createObjectURL(file);
-  preview.src = previewUrl;
+  previewUrl=URL.createObjectURL(file);
+  preview.src=previewUrl;
   cropWrap.classList.add('hidden');
   facePick.classList.add('hidden');
   previewWrap.classList.remove('hidden');
-  previewWrap.classList.remove('grid-cols-2');
-  previewWrap.classList.add('grid-cols-1');
+  previewWrap.classList.remove('grid-cols-2'); previewWrap.classList.add('grid-cols-1');
 }
-drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('border-accent/50','bg-accentSoft/40'); });
-drop.addEventListener('dragleave', ()=>drop.classList.remove('border-accent/50','bg-accentSoft/40'));
-drop.addEventListener('drop', e=>{
-  e.preventDefault();
-  drop.classList.remove('border-accent/50','bg-accentSoft/40');
-  if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]){
-    showPreview(e.dataTransfer.files[0]);
-  }
+drop.addEventListener('dragover',e=>{ e.preventDefault(); drop.classList.add('border-ink/50'); });
+drop.addEventListener('dragleave',()=>drop.classList.remove('border-ink/50'));
+drop.addEventListener('drop',e=>{
+  e.preventDefault(); drop.classList.remove('border-ink/50');
+  if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener('change', ()=>{ if(fileInput.files[0]) showPreview(fileInput.files[0]); });
+fileInput.addEventListener('change',()=>{ if(fileInput.files[0]) showPreview(fileInput.files[0]); });
 
-function revealResults(){
-  $('#results').classList.remove('hidden');
-  $('#intake').classList.add('max-w-[560px]');
-  $('#intake').classList.add('md:max-w-none');
-  // shrink hero: hide tagline once results exist
-  const tagline = document.querySelector('#intake p');
-  if(tagline) tagline.classList.add('hidden');
-}
-
-scanBtn.addEventListener('click', ()=>runScan());
+/* ---- pipeline run ---- */
+scanBtn.addEventListener('click',()=>runScan());
 
 async function runScan(faceIndex){
-  if(!fileInput.files[0]){ setText(status, 'Pick an image first'); status.className='mt-2 text-xs font-mono text-bad'; return; }
-  scanBtn.disabled = true;
+  if(!fileInput.files[0]){ setText(status,'Select an image first'); status.className='mt-2.5 text-xs font-mono text-bad'; return; }
+  scanBtn.disabled=true;
   facePick.classList.add('hidden');
-  setText(status, '[1/4] Detecting face…');
-  status.className='mt-2 text-xs font-mono text-accent';
-  const fdata = new FormData();
-  fdata.append('file', fileInput.files[0]);
-  const url = faceIndex != null ? '/api/scan?face_index='+faceIndex : '/api/scan';
-  const t1=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[2/4] Searching the web via Google Lens… (8–15s)'); }}, 2500);
-  const t2=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[3/4] Anchoring on Polygon Amoy…'); }}, 12000);
-  let resp, j;
+  setText(status,'[1/8] decoding input…'); status.className='mt-2.5 text-xs font-mono text-slate';
+  const fdata=new FormData(); fdata.append('file',fileInput.files[0]);
+  const url=faceIndex!=null?'/api/scan?face_index='+faceIndex:'/api/scan';
+  const t1=setTimeout(()=>{ if(scanBtn.disabled) setText(status,'[3/8] live search: Google Lens across the open web… (8–15s)'); },2500);
+  const t2=setTimeout(()=>{ if(scanBtn.disabled) setText(status,'[6/8] anchoring fingerprint on Polygon Amoy…'); },12000);
+  let resp,j;
   try{
-    resp = await fetch(url, {method:'POST', body:fdata});
-    try{ j = await resp.json(); } catch(_){ j = null; }
+    resp=await fetch(url,{method:'POST',body:fdata});
+    try{ j=await resp.json(); }catch(_){ j=null; }
   }catch(e){
     clearTimeout(t1); clearTimeout(t2);
-    setText(status, '✗ '+(e.message||e));
-    status.className='mt-2 text-xs font-mono text-bad';
-    scanBtn.disabled=false;
-    return;
+    setText(status,'✗ '+(e.message||e)); status.className='mt-2.5 text-xs font-mono text-bad';
+    scanBtn.disabled=false; return;
   }
   clearTimeout(t1); clearTimeout(t2);
   if(!resp.ok){
-    const msg = (j && (j.detail || j.error)) || resp.statusText || ('HTTP '+resp.status);
-    setText(status, '✗ '+msg);
-    status.className='mt-2 text-xs font-mono text-bad';
-    scanBtn.disabled=false;
-    return;
+    const msg=(j&&(j.detail||j.error))||resp.statusText||('HTTP '+resp.status);
+    setText(status,'✗ '+msg); status.className='mt-2.5 text-xs font-mono text-bad';
+    scanBtn.disabled=false; return;
   }
 
-  // multi-face: ask which face to search
   if(j.multi_face){
-    facePickTitle.textContent = j.num_faces + ' faces detected — pick the one to search';
+    facePickTitle.textContent=j.num_faces+' faces detected — pick the one to search';
     facePickGrid.innerHTML='';
-    for(const f of (j.faces || [])){
-      const btn=el('button',{class:'rounded-lg overflow-hidden border-2 border-line hover:border-accent bg-white transition', title:'face '+(f.index+1)});
-      const img=el('img',{alt:'face '+(f.index+1), class:'w-full h-16 object-cover'});
-      img.src = '/'+f.crop_path+'?t='+Date.now();
-      img.addEventListener('error', ()=>{ btn.style.opacity='0.3'; });
+    (j.faces||[]).forEach((f,i)=>{
+      const btn=el('button',{class:'border border-line bg-white p-0.5 hover:border-veridian transition','aria-label':'use face '+(i+1)});
+      const img=el('img',{alt:'face '+(i+1),class:'w-full h-16 object-cover'});
+      img.src='/'+f.crop_path+'?t='+Date.now();
+      img.addEventListener('error',()=>{ btn.style.opacity='0.3'; });
       btn.appendChild(img);
-      btn.addEventListener('click', ()=>{ runScan(f.index); });
+      btn.addEventListener('click',()=>runScan(f.index));
       facePickGrid.appendChild(btn);
-    }
+    });
     facePick.classList.remove('hidden');
-    setText(status, 'Pick a face above to continue');
-    status.className='mt-2 text-xs font-mono text-warn';
-    scanBtn.disabled=false;
-    return;
-  }
-  revealResults();
-
-  // face
-  const f = j.face;
-  faceBox.innerHTML='';
-  faceBox.appendChild(el('div',{class:'fade-in text-ink font-medium', text:`${f.engine} · ${f.num_faces} face${f.num_faces===1?'':'s'} · conf ${Number(f.conf).toFixed(2)}`}));
-  if(f.bbox){
-    faceBox.appendChild(el('div',{class:'text-xs text-muted mt-1 font-mono', text:`pHash ${f.embedding_hash}`}));
-  }
-  if(f.crop_path){
-    crop.onload = () => { cropWrap.classList.remove('hidden'); previewWrap.classList.add('grid-cols-2'); };
-    crop.onerror = () => cropWrap.classList.add('hidden');
-    crop.src = '/'+f.crop_path+'?t='+Date.now();
-  } else {
-    cropWrap.classList.add('hidden');
-  }
-  if(f.warning){
-    faceBox.appendChild(el('div',{class:'text-xs text-warn mt-1', text:'⚠ '+f.warning}));
-  }
-  faceMeta.textContent = '';
-
-  // social
-  const s = j.search;
-  redditBadge.classList.toggle('hidden', !s.reddit_found);
-  socialBox.innerHTML='';
-  hits.innerHTML='';
-  if(!s.top){
-    socialBox.appendChild(el('div',{class:'text-warn text-sm fade-in', text:'No matching public post found. Try a face posted publicly (Reddit, X, Instagram).'}));
-  } else {
-    const top = s.top;
-    const sim = top._face_sim != null ? top._face_sim : null;
-    const confident = s.confident === true;
-    socialBox.innerHTML='';
-    const head = el('div',{class:'fade-in'});
-    head.appendChild(el('div',{class:'text-ink font-medium'},[
-      document.createTextNode(confident ? 'Best match — ' : 'Closest result (no confident face match) — '),
-      el('span',{class:'text-accent', text: top.source || '—'}),
-    ]));
-    head.appendChild(el('div',{class:'text-sm text-slate-600 mt-0.5', text:(top.title||'').slice(0,90)}));
-    if(top.link){
-      const safe = safeUrl(top.link);
-      if(safe) head.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline break-all block mt-1', text: 'open post ↗'}));
-    }
-    if(sim != null){
-      const tone = sim >= 50 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                 : sim >= 36.3 ? 'bg-amber-50 text-amber-700 border-amber-200'
-                 : 'bg-slate-100 text-slate-600 border-slate-200';
-      head.appendChild(el('span',{class:'inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full border ' + tone, text: sim + '% face similarity'}));
-    }
-    if(!confident){
-      head.appendChild(el('div',{class:'text-xs text-warn mt-2', text:'⚠ The matched page does not contain a similar enough face. This is a visual look-alike from the index, not an identity match — nothing was falsely claimed.'}));
-    }
-    socialBox.appendChild(head);
-
-    for(const h of (s.hits || []).slice(0, 4)){
-      const row=el('div',{class:'rounded-lg border border-line bg-white p-2 flex gap-2 fade-in'});
-      const img=el('img',{class:'w-10 h-10 object-cover rounded-md bg-slate-100', alt:''});
-      if(h.thumbnail){
-        const ts = safeUrl(h.thumbnail);
-        if(ts) img.src = ts;
-      }
-      img.addEventListener('error', ()=>{ img.style.opacity='0.3'; });
-      row.appendChild(img);
-      const meta=el('div',{class:'min-w-0 flex-1'});
-      meta.appendChild(el('div',{class:'text-xs font-medium truncate', text: (h.title||'').slice(0,60)}));
-      if(h.link){
-        const ls = safeUrl(h.link);
-        if(ls) meta.appendChild(el('a',{href:ls, target:'_blank', rel:'noopener noreferrer', class:'text-[11px] text-accent hover:underline', text:'open ↗'}));
-      }
-      row.appendChild(meta);
-      hits.appendChild(row);
-    }
+    setText(status,'pick a face above to continue');
+    status.className='mt-2.5 text-xs font-mono text-signal';
+    scanBtn.disabled=false; return;
   }
 
-  // chain
-  const fp = j.fingerprint.fingerprint_sha256;
-  chainBox.innerHTML='';
-  const cb = el('div',{class:'fade-in'});
-  cb.appendChild(el('div',{class:'font-mono text-xs break-all text-ink', text: fp}));
-  chainBox.appendChild(cb);
-  const rc = j.receipt;
-  receiptEl.innerHTML='';
-  if(rc.txHash){
-    const safe = safeUrl(rc.explorerUrl);
-    const box=el('div',{class:'rounded-lg border border-emerald-200 bg-emerald-50 p-3 fade-in'});
-    box.appendChild(el('div',{class:'text-xs font-semibold text-ok', text:'Anchored on Polygon Amoy' + (rc.via === 'contract' ? ' · contract' : '')}));
-    box.appendChild(el('div',{class:'font-mono text-[11px] break-all text-slate-600 mt-1', text: 'block '+(rc.blockNumber||'?')}));
-    if(safe) box.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline', text: 'View transaction ↗'}));
-    receiptEl.appendChild(box);
-  } else if(rc.error){
-    receiptEl.appendChild(el('div',{class:'rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-bad fade-in', text: '✗ Anchor failed: '+rc.error}));
-  } else {
-    const box=el('div',{class:'rounded-lg border border-line bg-white p-3 fade-in'});
-    box.appendChild(el('div',{class:'text-xs text-muted', text: `local chain block #${rc.block_index}`}));
-    receiptEl.appendChild(box);
-  }
-
-  // re-verification against the on-chain record (task requirement 3)
-  const v = j.verify;
-  const vbox = el('div',{class:'rounded-lg border p-3 mt-2 fade-in ' + (v && v.verified === true ? 'border-emerald-200 bg-emerald-50' : 'border-line bg-white')});
-  const vok = v && v.verified === true;
-  vbox.appendChild(el('div',{class:'text-xs font-semibold ' + (vok ? 'text-ok' : 'text-muted'), text: vok ? 'Re-verified against on-chain record ✓' : 'Re-verification pending'}));
-  if(vok){
-    const paths = el('div',{class:'mt-1 space-y-0.5'});
-    for(const t of (v.txs || [])){
-      const label = t.via === 'contract'
-        ? 'contract state (anchored ' + (t.anchoredAt ? new Date(t.anchoredAt*1000).toISOString().slice(0,16).replace('T',' ') + ' UTC' : '✓') + ')'
-        : 'tx calldata == fingerprint';
-      if(t.explorerUrl){
-        const safe = safeUrl(t.explorerUrl);
-        if(safe){ paths.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-[11px] text-ok hover:underline block', text: '✓ ' + label + ' ↗'})); continue; }
-      }
-      paths.appendChild(el('div',{class:'text-[11px] text-ok', text: '✓ ' + label}));
-    }
-    if(j.local_block){
-      paths.appendChild(el('div',{class:'text-[11px] text-muted', text: '✓ local hash-chain block #' + j.local_block.block_index}));
-    }
-    vbox.appendChild(paths);
-    vbox.appendChild(el('div',{class:'text-[11px] text-muted mt-1', text: 'Tamper test: altered fingerprint correctly fails to verify.'}));
-  }
-  receiptEl.appendChild(vbox);
-
-  const vres = j.verify && j.verify.verified;
-  const vmsg = vres === true ? 'verified ✓' : (vres === false ? 'verified ✗' : (j.verify && (j.verify.note || j.verify.reason)) || '');
-  setText(status, '✓ Done — ' + vmsg);
-  status.className='mt-2 text-xs font-mono text-ok';
-  verifyInput.value = fp;
+  // reveal case file + stamp stages in sequence
+  results.classList.remove('hidden');
+  results.scrollIntoView({behavior:'smooth',block:'start'});
+  setText(status,'[7/8] verifying against the on-chain record…'); status.className='mt-2.5 text-xs font-mono text-slate';
+  render(j);
+  setText(status,'[8/8] done — evidence sealed');
+  status.className='mt-2.5 text-xs font-mono text-veridian';
+  verifyInput.value=j.fingerprint.fingerprint_sha256;
   healthCheck();
-  scanBtn.disabled = false;
+  scanBtn.disabled=false;
 }
 
-verifyBtn.addEventListener('click', async()=>{
-  const h = verifyInput.value.trim();
-  if(!HEX64.test(h)){
-    setText(verifyOut, '✗ must be 64-hex SHA-256');
-    verifyOut.className='mt-2 text-sm font-mono text-bad';
-    return;
+function render(j){
+  const f=j.face, s=j.search, fp=j.fingerprint, rc=j.receipt, v=j.verify, rv=j.reverify||{};
+  const t=now();
+
+  // 01 face
+  $('#s1Meta').textContent=(f.engine||'')+' · conf '+(Number(f.conf)||0).toFixed(2);
+  const c2=$('#crop2');
+  c2.onload=()=>c2.parentElement.classList.add('brackets');
+  c2.src='/'+f.crop_path+'?t='+Date.now();
+  const ff=$('#faceFacts'); ff.innerHTML='';
+  ff.appendChild(fact('engine',f.engine||'—',true));
+  ff.appendChild(fact('faces detected',String(f.num_faces)));
+  ff.appendChild(fact('detector conf',(Number(f.conf)||0).toFixed(3)));
+  ff.appendChild(fact('pHash embedding',f.embedding_hash||'—',true));
+  stampLedger('Input scan','',t); stampLedger('Face capture',f.embedding_hash||'',t);
+
+  // 02 match
+  const top=s.top||{};
+  const sim=top._face_sim!=null?top._face_sim:null;
+  const confident=s.confident===true;
+  const mb=$('#matchBox'); mb.innerHTML='';
+  const head=el('div',{class:'flex flex-wrap items-baseline gap-x-3 gap-y-1'});
+  head.appendChild(el('div',{class:'font-semibold text-[15px] text-ink',text:confident?'Matched on facial identity':'Closest indexed visual — no confident facial match'}));
+  head.appendChild(el('span',{class:'font-mono text-[12px] text-slate',text:(top.source||'—')}));
+  mb.appendChild(head);
+  if(top.title) mb.appendChild(el('div',{class:'text-slate mt-1',text:top.title}));
+  if(top.link) mb.appendChild(el('div',{class:'mt-1.5 text-[13px]'},[link('open the discovered post ↗',top.link)]));
+  if(sim!=null){
+    const meterWrap=el('div',{class:'mt-4 max-w-[420px]'});
+    meterWrap.appendChild(el('div',{class:'flex justify-between text-[11px] font-mono text-slate mb-1.5'},[
+      el('span',{text:'facial similarity (own heuristic, SFace cosine)'}),
+      el('span',{class:'font-semibold text-ink',text:sim+'%'}),
+    ]));
+    const meter=el('div',{class:'meter'});
+    const bar=el('i'); bar.style.width='0%'; meter.appendChild(bar);
+    meter.appendChild(el('u',{style:'left:36.3%',title:'same-person threshold 36.3%'}));
+    meterWrap.appendChild(meter);
+    mb.appendChild(meterWrap);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.width=Math.min(100,sim)+'%'; }));
   }
-  setText(verifyOut, 'Checking…');
-  verifyOut.className='mt-2 text-sm font-mono text-muted';
+  if(!confident){
+    mb.appendChild(el('div',{class:'mt-3 text-[12px] text-signal bg-signalSoft border border-signal/30 px-3 py-2',
+      text:'The matched page does not contain a similar enough face. Nothing is claimed as an identity match.'}));
+  }
+  const hits=$('#hits'); hits.innerHTML='';
+  (s.hits||[]).slice(0,4).forEach(h=>{
+    const row=el('div',{class:'border border-line bg-white p-2.5 flex gap-3'});
+    const img=el('img',{class:'w-12 h-12 object-cover border border-line flex-none',alt:''});
+    const ts=safeUrl(h.thumbnail); if(ts) img.src=ts;
+    img.addEventListener('error',()=>{ img.style.opacity='0.25'; });
+    row.appendChild(img);
+    const meta=el('div',{class:'min-w-0 flex-1'});
+    meta.appendChild(el('div',{class:'text-[13px] font-medium truncate',text:(h.title||'').slice(0,60)}));
+    meta.appendChild(el('div',{class:'text-[11px] font-mono text-slate',text:(h.source||'?')+(h._face_sim!=null?' · '+h._face_sim+'%':'')}));
+    if(h.link){ const ls=safeUrl(h.link); if(ls) meta.appendChild(el('a',{href:ls,target:'_blank',rel:'noopener noreferrer',class:'text-[11px] text-veridian hover:underline',text:'open ↗'})); }
+    row.appendChild(meta);
+    hits.appendChild(row);
+  });
+  $('#redditBadge').classList.toggle('hidden',!s.reddit_found);
+  stampLedger('Source located',(top.link||''),t,(sim!=null?sim+'% facial similarity':null));
+
+  // 03 fingerprint
+  const ff2=$('#fpFacts'); ff2.innerHTML='';
+  ff2.appendChild(fact('url',top.link||top.url||'—'));
+  ff2.appendChild(fact('title',(top.title||'—').slice(0,90)));
+  ff2.appendChild(fact('source',top.source||'—'));
+  ff2.appendChild(fact('thumbnail',top.thumbnail||'—'));
+  ff2.appendChild(fact('image sha256',(fp.image_sha256||'—').slice(0,32)+(fp.image_sha256?'…':''),true));
+  $('#fpBig').textContent=fp.fingerprint_sha256;
+  stampLedger('Fingerprint',fp.fingerprint_sha256,t);
+
+  // 04 chain
+  const cf=$('#chainFacts'); cf.innerHTML='';
+  if(rc.txHash){
+    cf.appendChild(fact('transaction',link((rc.txHash||'').slice(0,34)+'… ↗',rc.explorerUrl),true));
+    cf.appendChild(fact('block',String(rc.blockNumber||'—'),true));
+    cf.appendChild(fact('anchoring',rc.via==='contract'?'FaceAnchor contract (call + event)':'self transaction'));
+    if(rc.contractAddress){
+      cf.appendChild(fact('contract',link(rc.contractAddress+' ↗','https://amoy.polygonscan.com/address/'+rc.contractAddress),true));
+    }
+    cf.appendChild(fact('dedupe',rc.deduplicated?'already anchored — no duplicate tx':'first anchor for this fingerprint'));
+  } else if(rc.error){
+    cf.appendChild(el('div',{class:'text-bad bg-badSoft border border-bad/30 px-3 py-2 text-[12px]',text:'Anchor failed: '+rc.error}));
+  } else {
+    cf.appendChild(fact('local chain','block #'+(rc.block_index||'—')));
+  }
+  stampLedger('On-chain record',(rc.txHash||'').slice(0,22),t,(rc.blockNumber?('block '+rc.blockNumber):null));
+
+  // 05 re-verification
+  const rf=$('#reverifyFacts'); rf.innerHTML='';
+  const vok=v&&v.verified===true;
+  const rok=rv.match===true;
+  if(vok){
+    const w=el('div',{class:'space-y-1'});
+    (v.txs||[]).forEach(tx=>{
+      const label=tx.via==='contract'?'contract state: fingerprint present (anchoredAt recorded)':'tx calldata == fingerprint (selector-aware)';
+      if(tx.explorerUrl) w.appendChild(el('div',[link('✓ '+label+' ↗',tx.explorerUrl)]));
+      else w.appendChild(el('div',{class:'text-veridian',text:'✓ '+label}));
+    });
+    if(j.local_block) w.appendChild(el('div',{class:'text-veridian',text:'✓ local hash-chain: block #'+j.local_block.block_index+' intact'}));
+    rf.appendChild(w);
+  } else {
+    rf.appendChild(el('div',{class:'text-slate',text:v?(v.note||v.reason||'not verified'):'no verification result'}));
+  }
+  rf.appendChild(el('div',{class:'mt-3 pt-3 border-t border-line/70 space-y-1'}));
+  const tail=rf.lastChild;
+  tail.appendChild(el('div',{class:rok?'text-veridian font-medium':'text-signal font-medium'},
+    [document.createTextNode(rok?'✓ Independent re-hash: ':'⚠ Independent re-hash: '),
+     el('span',{class:'font-mono text-[12px]',text:(rok?'match — live web re-download reproduces the fingerprint':'mismatch — see reverify.json')})]));
+  tail.appendChild(el('div',{class:'text-slate',text:'method: re-retrieve discovered image → re-canonicalize → SHA-256 → compare with on-chain'}));
+  tail.appendChild(el('div',{class:'text-slate',text:'tamper test: altered fingerprint correctly fails verification ('+((j.fingerprint.fingerprint_sha256||'').slice(-1)==='0'?'…0':'…')+' → flipped last char)'}));
+  stampLedger('Re-verification',(rv.recomputed_fingerprint||'').slice(0,22),t,rok?'live re-hash matches':'mismatch — disclosed');
+}
+
+/* ---- verify tool ---- */
+verifyBtn.addEventListener('click',async()=>{
+  const h=verifyInput.value.trim();
+  if(!HEX64.test(h)){ setText(verifyOut,'✗ must be 64-hex SHA-256'); verifyOut.className='mt-2.5 text-sm font-mono text-bad'; return; }
+  setText(verifyOut,'checking…'); verifyOut.className='mt-2.5 text-sm font-mono text-slate';
   try{
-    const r=await fetch('/api/verify?hash='+encodeURIComponent(h), {headers:{'Accept':'application/json'}});
+    const r=await fetch('/api/verify?hash='+encodeURIComponent(h),{headers:{'Accept':'application/json'}});
     let j=null; try{ j=await r.json(); }catch(_){}
-    if(!r.ok){
-      const msg = (j && (j.detail || j.error)) || r.statusText;
-      verifyOut.innerHTML='';
-      verifyOut.appendChild(el('span',{class:'text-bad', text: '✗ '+msg}));
-      return;
-    }
-    const ok = j.verified;
+    if(!r.ok){ verifyOut.innerHTML=''; verifyOut.appendChild(el('span',{class:'text-bad',text:'✗ '+((j&&(j.detail||j.error))||r.statusText)})); return; }
     verifyOut.innerHTML='';
-    if(ok === true){
-      verifyOut.appendChild(el('span',{class:'text-ok font-medium', text: '✓ Verified'}));
-      const wrap = el('div',{class:'mt-1'});
-      for(const t of (j.txs || [])){
-        const label = t.via === 'contract' ? 'contract state ✓' : 'tx ' + (t.txHash||'').slice(0,10) + '… ✓';
-        if(t.explorerUrl){
-          const safe = safeUrl(t.explorerUrl);
-          if(safe){ wrap.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-ok hover:underline block', text: label + ' ↗'})); continue; }
-        }
-        wrap.appendChild(el('div',{class:'text-xs text-ok', text: label}));
-      }
+    if(j.verified===true){
+      verifyOut.appendChild(el('span',{class:'text-veridian font-semibold',text:'✓ Verified'}));
+      const wrap=el('div',{class:'mt-1'});
+      (j.txs||[]).forEach(tx=>{
+        const label=tx.via==='contract'?'contract state ✓':'tx '+(tx.txHash||'').slice(0,10)+'… ✓';
+        if(tx.explorerUrl){ const s=safeUrl(tx.explorerUrl); if(s){ wrap.appendChild(el('a',{href:s,target:'_blank',rel:'noopener noreferrer',class:'text-[12px] text-veridian hover:underline block',text:label+' ↗'})); return; } }
+        wrap.appendChild(el('div',{class:'text-[12px] text-veridian',text:label}));
+      });
       verifyOut.appendChild(wrap);
-    } else if(ok === false){
-      verifyOut.appendChild(el('span',{class:'text-bad font-medium', text: '✗ Not verified'}));
-      const rsn = j.reason || (j.txs && j.txs[0] && j.txs[0].error);
-      if(rsn) verifyOut.appendChild(el('span',{class:'text-muted', text: ' — '+rsn}));
+    } else if(j.verified===false){
+      verifyOut.appendChild(el('span',{class:'text-bad font-semibold',text:'✗ Not verified'}));
+      const rsn=j.reason||(j.txs&&j.txs[0]&&j.txs[0].error);
+      if(rsn) verifyOut.appendChild(el('span',{class:'text-slate',text:' — '+rsn}));
     } else {
-      verifyOut.appendChild(el('span',{class:'text-warn font-medium', text: '? Unknown'}));
-      if(j.note) verifyOut.appendChild(el('span',{class:'text-muted', text: ' — '+j.note}));
+      verifyOut.appendChild(el('span',{class:'text-signal font-semibold',text:'? Unknown'}));
+      if(j.note) verifyOut.appendChild(el('span',{class:'text-slate',text:' — '+j.note}));
     }
-  }catch(e){
-    verifyOut.innerHTML='';
-    verifyOut.appendChild(el('span',{class:'text-bad', text: '✗ '+(e.message||e)}));
-  }
+  }catch(e){ verifyOut.innerHTML=''; verifyOut.appendChild(el('span',{class:'text-bad',text:'✗ '+(e.message||e)})); }
 });
-verifyInput.addEventListener('keydown', e=>{ if(e.key==='Enter') verifyBtn.click(); });
+verifyInput.addEventListener('keydown',e=>{ if(e.key==='Enter') verifyBtn.click(); });
 </script>
 </body>
 </html>

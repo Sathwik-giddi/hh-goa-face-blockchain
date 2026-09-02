@@ -164,6 +164,9 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         except Exception as e:
             raise HTTPException(500, f"anchor failed: {e}")
 
+        from src.utils import reverify_independent
+        reverify = reverify_independent(fp, out_dir=OUTPUTS)
+
         return {
             "face": face,
             "search": {
@@ -178,6 +181,7 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
             "fingerprint": fp,
             "receipt": receipt,
             "verify": verify(fingerprint, chain_file=str(CHAIN)),
+            "reverify": reverify,
         }
     finally:
         if tmp.exists():

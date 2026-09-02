@@ -287,21 +287,32 @@ function initLedger(){
   ledger.innerHTML='';
   LEDGER_STAGES.forEach(label=>{
     const li=el('li',{class:'relative pl-6 pb-5','data-stage':label});
-    li.appendChild(el('span',{class:'absolute -left-[7px] top-1 w-3 h-3 rounded-full border-2 border-line bg-paper'}));
-    li.appendChild(el('div',{class:'text-[13px] font-medium text-slate/70',text:label}));
-    li.appendChild(el('div',{class:'text-[11px] font-mono text-slate/50',text:'· awaiting'}));
+    li.appendChild(el('span',{class:'absolute -left-[7px] top-1 w-3 h-3 rounded-full border-2 border-line bg-paper','data-dot':''}));
+    li.appendChild(el('div',{class:'text-[13px] font-medium text-slate/70','data-label':'',text:label}));
+    li.appendChild(el('div',{class:'text-[11px] font-mono text-slate/50','data-sub':'',text:'· awaiting'}));
     ledger.appendChild(li);
   });
 }
-function stampLedger(label,hash,ts,extra){
+function setStageActive(label,note){
+  const li=ledger.querySelector('[data-stage="'+label+'"]'); if(!li) return;
+  li.querySelectorAll('[data-dot]')[0].className='absolute -left-[7px] top-1 w-3 h-3 rounded-full border-2 border-ink bg-white animate-pulse';
+  const lab=li.querySelectorAll('[data-label]')[0]; lab.className='text-[13px] font-semibold text-ink';
+  const sub=li.querySelectorAll('[data-sub]')[0]; sub.className='text-[11px] font-mono text-ink'; sub.textContent=note||'· in progress…';
+}
+function setStageFailed(label){
+  const li=ledger.querySelector('[data-stage="'+label+'"]'); if(!li) return;
+  const dot=li.querySelectorAll('[data-dot]')[0]; if(dot) dot.className='absolute -left-[7px] top-1 w-3 h-3 rounded-full border-2 border-bad bg-badSoft';
+  const lab=li.querySelectorAll('[data-label]')[0]; if(lab) lab.className='text-[13px] font-semibold text-bad';
+  const sub=li.querySelectorAll('[data-sub]')[0]; if(sub){ sub.className='text-[11px] font-mono text-bad'; sub.textContent='· failed'; }
+}
+function stampLedger(label,hash,ts,extra,delay){
   const li=ledger.querySelector('[data-stage="'+label+'"]'); if(!li) return;
   li.innerHTML='';
   li.className='relative pl-6 pb-5 stamp';
-  const dot=el('span',{class:'absolute -left-[9px] top-0.5 stamp-dot',text:'✓'});
-  li.appendChild(dot);
+  if(delay) li.style.animationDelay=delay+'ms';
+  li.appendChild(el('span',{class:'absolute -left-[9px] top-0.5 stamp-dot',text:'✓'}));
   li.appendChild(el('div',{class:'text-[13px] font-semibold text-ink',text:label}));
-  const meta=el('div',{class:'text-[11px] font-mono text-slate',text:ts||now()});
-  li.appendChild(meta);
+  li.appendChild(el('div',{class:'text-[11px] font-mono text-slate',text:ts||now()}));
   if(hash) li.appendChild(el('div',{class:'text-[11px] font-mono text-veridian break-all',text:hash.slice(0,22)+'…'}));
   if(extra) li.appendChild(el('div',{class:'text-[11px] text-slate',text:extra}));
 }
@@ -324,15 +335,28 @@ async function loadChain(){
     heightEl.textContent=j.height;
     chainList.innerHTML='';
     for(const b of j.chain){
-      const row=el('div',{class:'flex justify-between gap-2 py-0.5'},[
-        el('span',{class:'text-slate',text:'#'+b.index}),
-        el('span',{class:'text-ink',text:b.hash.slice(0,10)+'…'}),
-      ]);
+      const txHash=b.data&&b.data.txHash;
+      const label=el('span',{class:'text-ink',text:b.hash.slice(0,10)+'…'});
+      label.title='block '+b.hash+(txHash?' · tx '+txHash:'');
+      let row;
+      if(txHash){
+        const s=safeUrl('https://amoy.polygonscan.com/tx/'+txHash);
+        row=el('div',{class:'flex justify-between gap-2 py-0.5'},[
+          el('span',{class:'text-slate',text:'#'+b.index}),
+          s?el('a',{href:s,target:'_blank',rel:'noopener noreferrer',class:'text-ink hover:text-veridian hover:underline'},[label])
+           :label,
+        ]);
+      } else {
+        row=el('div',{class:'flex justify-between gap-2 py-0.5'},[
+          el('span',{class:'text-slate',text:'#'+b.index}), label,
+        ]);
+      }
       chainList.appendChild(row);
     }
   }catch(e){}
 }
 healthCheck();
+setInterval(healthCheck,20000);
 
 /* ---- upload ---- */
 function showPreview(file){
@@ -359,11 +383,14 @@ async function runScan(faceIndex){
   if(!fileInput.files[0]){ setText(status,'Select an image first'); status.className='mt-2.5 text-xs font-mono text-bad'; return; }
   scanBtn.disabled=true;
   facePick.classList.add('hidden');
+  initLedger();
+  setStageActive('Input scan','reading image…');
   setText(status,'[1/8] decoding input…'); status.className='mt-2.5 text-xs font-mono text-slate';
   const fdata=new FormData(); fdata.append('file',fileInput.files[0]);
   const url=faceIndex!=null?'/api/scan?face_index='+faceIndex:'/api/scan';
-  const t1=setTimeout(()=>{ if(scanBtn.disabled) setText(status,'[3/8] live search: Google Lens across the open web… (8–15s)'); },2500);
-  const t2=setTimeout(()=>{ if(scanBtn.disabled) setText(status,'[6/8] anchoring fingerprint on Polygon Amoy…'); },12000);
+  const tFace=setTimeout(()=>{ if(scanBtn.disabled) setStageActive('Face capture','detecting + encoding…'); },900);
+  const t1=setTimeout(()=>{ if(scanBtn.disabled){ setStageActive('Source located','live Google Lens…'); setText(status,'[3/8] live search: Google Lens across the open web… (8–15s)'); status.className='mt-2.5 text-xs font-mono text-slate'; } },2500);
+  const t2=setTimeout(()=>{ if(scanBtn.disabled){ setStageActive('On-chain record','anchoring on Polygon Amoy…'); setText(status,'[6/8] anchoring fingerprint on Polygon Amoy…'); } },12000);
   let resp,j;
   try{
     resp=await fetch(url,{method:'POST',body:fdata});
@@ -373,9 +400,10 @@ async function runScan(faceIndex){
     setText(status,'✗ '+(e.message||e)); status.className='mt-2.5 text-xs font-mono text-bad';
     scanBtn.disabled=false; return;
   }
-  clearTimeout(t1); clearTimeout(t2);
+  clearTimeout(tFace); clearTimeout(t1); clearTimeout(t2);
   if(!resp.ok){
     const msg=(j&&(j.detail||j.error))||resp.statusText||('HTTP '+resp.status);
+    setStageFailed(resp.status===422?'Face capture':(resp.status===404?'Source located':'On-chain record'));
     setText(status,'✗ '+msg); status.className='mt-2.5 text-xs font-mono text-bad';
     scanBtn.disabled=false; return;
   }
@@ -429,7 +457,8 @@ function render(j){
   ff.appendChild(fact('faces detected',String(f.num_faces)));
   ff.appendChild(fact('detector conf',(Number(f.conf)||0).toFixed(3)));
   ff.appendChild(fact('pHash embedding',f.embedding_hash||'—',true));
-  stampLedger('Input scan','',t); stampLedger('Face capture',f.embedding_hash||'',t);
+  stampLedger('Input scan','',t, null, 0);
+  setTimeout(()=>stampLedger('Face capture',f.embedding_hash||'',t,null,0),150);
 
   // 02 match
   const top=s.top||{};
@@ -474,7 +503,7 @@ function render(j){
     hits.appendChild(row);
   });
   $('#redditBadge').classList.toggle('hidden',!s.reddit_found);
-  stampLedger('Source located',(top.link||''),t,(sim!=null?sim+'% facial similarity':null));
+  setTimeout(()=>stampLedger('Source located',(top.link||''),t,(sim!=null?sim+'% facial similarity':null),0),300);
 
   // 03 fingerprint
   const ff2=$('#fpFacts'); ff2.innerHTML='';
@@ -484,7 +513,7 @@ function render(j){
   ff2.appendChild(fact('thumbnail',top.thumbnail||'—'));
   ff2.appendChild(fact('image sha256',(fp.image_sha256||'—').slice(0,32)+(fp.image_sha256?'…':''),true));
   $('#fpBig').textContent=fp.fingerprint_sha256;
-  stampLedger('Fingerprint',fp.fingerprint_sha256,t);
+  setTimeout(()=>stampLedger('Fingerprint',fp.fingerprint_sha256,t,null,0),450);
 
   // 04 chain
   const cf=$('#chainFacts'); cf.innerHTML='';
@@ -501,7 +530,7 @@ function render(j){
   } else {
     cf.appendChild(fact('local chain','block #'+(rc.block_index||'—')));
   }
-  stampLedger('On-chain record',(rc.txHash||'').slice(0,22),t,(rc.blockNumber?('block '+rc.blockNumber):null));
+  setTimeout(()=>stampLedger('On-chain record',(rc.txHash||'').slice(0,22),t,(rc.blockNumber?('block '+rc.blockNumber):null),0),600);
 
   // 05 re-verification
   const rf=$('#reverifyFacts'); rf.innerHTML='';
@@ -526,7 +555,7 @@ function render(j){
      el('span',{class:'font-mono text-[12px]',text:(rok?'match — live web re-download reproduces the fingerprint':'mismatch — see reverify.json')})]));
   tail.appendChild(el('div',{class:'text-slate',text:'method: re-retrieve discovered image → re-canonicalize → SHA-256 → compare with on-chain'}));
   tail.appendChild(el('div',{class:'text-slate',text:'tamper test: altered fingerprint correctly fails verification ('+((j.fingerprint.fingerprint_sha256||'').slice(-1)==='0'?'…0':'…')+' → flipped last char)'}));
-  stampLedger('Re-verification',(rv.recomputed_fingerprint||'').slice(0,22),t,rok?'live re-hash matches':'mismatch — disclosed');
+  setTimeout(()=>stampLedger('Re-verification',(rv.recomputed_fingerprint||'').slice(0,22),t,rok?'live re-hash matches':'mismatch — disclosed',0),750);
 }
 
 /* ---- verify tool ---- */

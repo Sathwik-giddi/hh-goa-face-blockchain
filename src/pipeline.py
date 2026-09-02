@@ -33,7 +33,7 @@ def run_pipeline(
         raise FileNotFoundError(f"Image not found: {image}")
 
     if verbose:
-        print(f"\n[1/8] INPUT")
+        print("\n[1/8] INPUT")
         print(f"  → {image} ({image.stat().st_size} bytes)")
     face = detect_and_encode(image, out_dir=out_dir)
     if not face.get("crop_path"):
@@ -42,25 +42,25 @@ def run_pipeline(
             "Use a photo with a visible face (frontal or 3-quarter)."
         )
     if verbose:
-        print(f"[2/8] FACE")
+        print("[2/8] FACE")
         print(f"  ✓ engine={face['engine']} faces={face['num_faces']} conf={face.get('conf', 0):.2f}")
         print(f"  ✓ embedding (pHash) {face.get('embedding_hash')} → crop {face['crop_path']}")
         if face.get("warning"):
             print(f"  ⚠ {face['warning']}")
 
     if verbose:
-        print(f"[3/8] WEB SEARCH (live — Google Lens via SerpAPI)")
+        print("[3/8] WEB SEARCH (live — Google Lens via SerpAPI)")
     search = reverse_image_search(face["crop_path"], original_path=str(image), prefer_source=prefer_source)
     vm = search.get("visual_matches", [])
     top = search.get("top_match")
     if not top:
         raise RuntimeError(
-            f"Live search returned 0 hits — no public indexed copy of this face. "
+            "Live search returned 0 hits — no public indexed copy of this face. "
             "Try a face that is posted publicly (IG/X/Reddit)."
         )
     if verbose:
         print(f"  ✓ mode={search['mode']} queries={search.get('num_queries', 1)} hits={len(search.get('all_hits', []))} (face-embedded {search.get('face_similar_count')}) reddit_found={search.get('reddit_found')}")
-        print(f"[4/8] MATCH")
+        print("[4/8] MATCH")
         sim = top.get("_face_sim")
         link_ok = bool(top.get("_link_valid"))
         print(f"  ✓ [{top.get('source')}] face_sim={sim if sim is not None else 'n/a'}% link={'✓ ' + top.get('_link_note','') if link_ok else '✗ ' + top.get('_link_note','unverified')} {top.get('title', '')[:70]}")
@@ -73,7 +73,7 @@ def run_pipeline(
             )
 
     if verbose:
-        print(f"[5/8] FINGERPRINT (deterministic canonical record → SHA-256)")
+        print("[5/8] FINGERPRINT (deterministic canonical record → SHA-256)")
     # §15: hash the post's image as retrieved from the source (not our crop),
     # so independent re-verification can re-download the same URL and re-hash.
     post_image = download_image(top.get("thumbnail") or "", out_dir / "_post_image.jpg")
@@ -89,7 +89,7 @@ def run_pipeline(
         "face_similar_count": search.get("face_similar_count"),
     }
     if verbose:
-        print(f"  ✓ canonical record fields: url, title, source, thumbnail, image_sha256 (sorted keys, UTF-8)")
+        print("  ✓ canonical record fields: url, title, source, thumbnail, image_sha256 (sorted keys, UTF-8)")
         print(f"  ✓ fingerprint {fingerprint}")
 
     if verbose:
@@ -97,15 +97,15 @@ def run_pipeline(
     receipt = anchor(fingerprint, payload, chain_file=str(chain_file))
     if verbose:
         if receipt.get("deduplicated"):
-            print(f"  ✓ already anchored on-chain (dedupe) — no new tx needed")
+            print("  ✓ already anchored on-chain (dedupe) — no new tx needed")
         else:
-            print(f"  ✓ tx submitted + confirmed")
+            print("  ✓ tx submitted + confirmed")
         print(f"    {receipt.get('txHash') or receipt.get('block_hash')}")
         if receipt.get("explorerUrl"):
             print(f"    {receipt['explorerUrl']}")
 
     if verbose:
-        print(f"[7/8] VERIFICATION (independent)")
+        print("[7/8] VERIFICATION (independent)")
     v = verify(fingerprint, chain_file=str(chain_file))
     on_chain = v.get("verified") is True
     if verbose:
@@ -125,7 +125,7 @@ def run_pipeline(
         print(f"    recomputed {rv.get('recomputed_fingerprint')[:24]}…")
 
     if verbose:
-        print(f"[8/8] RESULT" + ("  + TAMPER TEST" if on_chain else ""))
+        print("[8/8] RESULT" + ("  + TAMPER TEST" if on_chain else ""))
     tampered = fingerprint[:-1] + ("0" if fingerprint[-1] != "0" else "1")
     vt = verify(tampered, chain_file=str(chain_file))
     if verbose:

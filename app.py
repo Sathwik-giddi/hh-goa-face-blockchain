@@ -1,8 +1,5 @@
 """10/10 frontend API — LIVE ONLY, serves forensic luxury UI."""
 import os
-import json
-import re
-import shutil
 from pathlib import Path
 from datetime import datetime, timezone
 from dotenv import load_dotenv

@@ -133,12 +133,13 @@ src/{pipeline.py,face_id.py,search.py,blockchain.py,blockchain_local.py,blockcha
 contracts/FaceAnchor.sol  (deployed on Amoy: anchoring + Anchored event + trustless verify)
 scripts/deploy_contract.py (compile + deploy + write EVM_CONTRACT_ADDRESS to .env)
 scripts/run_demo.sh        (one-command 8-stage demo for the screen recording)
-models/*.onnx             (YuNet 230KB + SFace 37MB, auto-downloaded, .gitignored)
-frontend/index.html  (XSS-safe, multi-face picker, contract badges, similarity %)
+models/*.onnx             (YuNet 230KB + SFace 37MB + ArcFace 166MB, auto-downloaded, .gitignored)
+frontend/index.html  (XSS-safe, multi-face picker, evidence ledger UI, similarity meter)
 app.py  (FastAPI, CORS-locked, 10MB upload cap, per-request isolation)
-chain.json  evm_mirror.json  (live audit trail, pushed for judges)
-tests/test_pipeline.py  (12 tests: E2E, integrity, canonicalization, multi-face, re-verify, tamper, failure modes)
+chain.json  evm_mirror.json  (live audit trail — committed deliberately for judges)
+tests/test_pipeline.py  (11 tests: E2E, integrity, canonicalization, multi-face, re-verify, tamper, failure modes)
 ```
+Note: `outputs/` is runtime evidence (result.json, face crops) — generated per run, not committed.
 
 ## Troubleshooting
 

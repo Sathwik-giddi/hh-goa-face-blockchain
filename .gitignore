@@ -8,18 +8,14 @@ env/
 .env
 .env.*
 !.env.example
-chain.json
+# audit trail is committed deliberately (judges verify these)
+!chain.json
+!evm_mirror.json
 chain.json.lock
-evm_mirror.json
 evm_mirror.json.lock
 *.log
 .DS_Store
-data/input/*
-!data/input/.gitkeep
-data/output/*
-!data/output/.gitkeep
 outputs/*
-!outputs/.gitkeep
 !outputs/.gitkeep
 temp/
 node_modules/

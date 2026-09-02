@@ -80,8 +80,6 @@ def reverify_independent(evidence: dict, out_dir: Path = Path("outputs")) -> dic
     field from a fresh re-download. Returns a structured result; never fakes
     success (a failed re-download downgrades the result honestly).
     """
-    import requests  # local import: tests may not need it
-
     post = evidence or {}
     url = post.get("url") or ""
     thumb = post.get("thumbnail") or ""

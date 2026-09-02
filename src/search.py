@@ -4,23 +4,20 @@ Picks Reddit-aware ranking, supports Lens + google_reverse_image fallback, and
 uses real 64-bit pHash Hamming distance (not sha256-of-bits) so any face on the
 open web — not just celebrities — surfaces true matches.
 """
-import io
 import os
 import tempfile
-import threading
 from pathlib import Path
 from urllib.parse import urlparse
 
 import cv2
 import numpy as np
 import requests
+from PIL import Image
 from dotenv import load_dotenv
 
 from .face_id import face_embedding, embedding_similarity
 
 load_dotenv()
-
-_THREAD_LOCAL = threading.local()
 
 
 def _phash(image_path) -> str:
@@ -44,16 +41,6 @@ def _phash(image_path) -> str:
         return f"{packed:016x}"
     except Exception:
         return ""
-
-
-def _hamming(a: str, b: str) -> int:
-    """Hamming distance on two 64-bit hex strings (returns 0..64)."""
-    if not a or not b or len(a) != len(b):
-        return 999
-    try:
-        return bin(int(a, 16) ^ int(b, 16)).count("1")
-    except Exception:
-        return 999
 
 
 def _serpapi_upload(image_path: Path, api_key: str, timeout: int = 30) -> str:
@@ -90,7 +77,6 @@ def _prepare_upload(image_path: Path, max_bytes: int = 480_000) -> Path:
     Returns the original path when small enough, else a temp JPEG (~1400px,
     quality stepped down until the cap fits). Content is unchanged for search.
     """
-    import tempfile
     p = Path(image_path)
     if p.stat().st_size <= max_bytes:
         return p

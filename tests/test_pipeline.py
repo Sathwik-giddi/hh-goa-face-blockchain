@@ -112,13 +112,6 @@ def test_phash_deterministic():
         warnings.warn("phash collision lena==3q (rare)")
 
 
-def test_hamming_distance():
-    """Hamming on 64-bit pHash: identical=0, flipped>=1."""
-    from src.search import _hamming
-    assert _hamming("0" * 16, "0" * 16) == 0
-    assert _hamming("0" * 16, "f" * 16) > 0
-
-
 def test_is_hex64():
     assert is_hex64("0" * 64)
     assert is_hex64("a" * 64)
@@ -168,6 +161,7 @@ def test_multi_face_deterministic_selection():
     assert opts[0]["index"] == 0
     # explicit selection must switch the encoded face deterministically
     if len(opts) > 1:
+        from src.face_id import detect_and_encode
         f0 = detect_and_encode_safe("data/samples/3q.jpg")
         f1 = detect_and_encode("data/samples/3q.jpg", out_dir=TEST_OUT, face_index=1)
         assert f1["selected_index"] == 1

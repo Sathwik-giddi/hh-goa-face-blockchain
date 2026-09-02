@@ -5,7 +5,6 @@ Handles 3-quarter, side profile, glasses, and small faces much better than Haar.
 
 Fallback: OpenCV Haar (frontal only) if YuNet unavailable.
 """
-import hashlib
 import threading
 from pathlib import Path
 import cv2
@@ -217,7 +216,7 @@ def detect_rows_yunet(img):
     return img, rows
 
 
-def face_embedding(image, face_row=None):
+def face_embedding(image):
     """Recognition embedding for the largest face in `image`.
 
     Primary: ArcFace (InsightFace w600k_r50, 512-D, L2-normalized) — a strong

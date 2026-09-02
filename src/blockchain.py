@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from .blockchain_local import anchor_local, verify_local
 from .utils import is_hex64
 

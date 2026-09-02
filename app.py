@@ -122,6 +122,21 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         if not face.get("crop_path"):
             raise HTTPException(422, face.get("warning", "no face detected"))
 
+        # crop paths must be web-relative ("/outputs/<file>" is served by the
+        # outputs route) — the frontend prepends "/" to whatever we return.
+        def _webify(f):
+            f = dict(f)
+            if f.get("crop_path"):
+                f["crop_path"] = "outputs/" + Path(f["crop_path"]).name
+            if f.get("face_options"):
+                f["face_options"] = [
+                    dict(o, crop_path="outputs/" + Path(o["crop_path"]).name)
+                    for o in f["face_options"]
+                ]
+            return f
+
+        face = _webify(face)
+
         # Multiple faces and no explicit choice → ask the user to pick.
         opts = face.get("face_options") or []
         if len(opts) > 1 and face_index is None:

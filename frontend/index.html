@@ -409,6 +409,8 @@ async function runScan(faceIndex){
   }
 
   if(j.multi_face){
+    stampLedger('Input scan','',now());
+    setStageActive('Face capture',j.num_faces+' faces — awaiting your pick');
     facePickTitle.textContent=j.num_faces+' faces detected — pick the person to search (highlighted = main subject)';
     facePickGrid.innerHTML='';
     (j.faces||[]).forEach((f,i)=>{

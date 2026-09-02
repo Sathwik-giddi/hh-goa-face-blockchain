@@ -739,5 +739,136 @@
       "face_similar_count": 8
     },
     "hash": "efcabb6878c2c581f72922f2066bbfb5da4c010057141725721b9e2fc23777cf"
+  },
+  {
+    "index": 18,
+    "timestamp": "2026-09-02T18:27:40.286061+00:00",
+    "prev_hash": "efcabb6878c2c581f72922f2066bbfb5da4c010057141725721b9e2fc23777cf",
+    "data_hash": "ef7eb9d11d0a3dff02b4f1e180b259b9b3c4f963a12111c69e5e42964c7c93ba",
+    "data": {
+      "fingerprint": "49ce2cc6b81942f425374def99caea9a715cdceab613dd21fa96a56d90a7450f",
+      "mode": "evm",
+      "txHash": "0x45812b40f7b9c9ad2d9e828871c45d5eebc818fac783d8c178c87f9c0d21b571",
+      "blockNumber": 46555219,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x45812b40f7b9c9ad2d9e828871c45d5eebc818fac783d8c178c87f9c0d21b571",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 16,
+        "title": "50% OFF Deckmate Coupon Codes - August 2026 Promo Codes",
+        "link": "https://deckmate.tenereteam.com/coupons",
+        "source": "Deckmate Reviews - TenereTeam",
+        "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcRqsBudtAg5trrMbmaSWIq9409EQo_m7CJcEUAagOeD0oKmU6nOWsTs172j2JOUG-jcf0VputNIrvrMFk2f4qmFLbCTHv4GGE4ShFKJIp5lqUms9qgz0QV6Ky6_Ow",
+        "rating": 4.7,
+        "reviews": 8,
+        "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcT7fLgN8uaxQgpJXdVFI92nf8Cgn1tDv-6RdLJzBw98EOxPmZnD",
+        "thumbnail_width": 225,
+        "thumbnail_height": 225,
+        "image": "https://user-avatar.tenereteam.com/avatar?alias=ZGVja21hdGU=&coupon_code=TE9WSU5HVEVDSExJRkUtV1pDSDlYTkNKVENa&gender=female",
+        "image_width": 256,
+        "image_height": 256,
+        "_face_sim": 48.4
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.9494119882583618,
+        "bbox": [
+          324,
+          95,
+          174,
+          236
+        ],
+        "embedding_hash": "830f072363430f4f"
+      },
+      "search_mode": "live",
+      "reddit_found": false,
+      "face_similar_count": 4
+    },
+    "hash": "b8eb507efd720fcbafc4e70a6acd99ebb20d82e3bc4262038909f6ec0cac5d90"
+  },
+  {
+    "index": 19,
+    "timestamp": "2026-09-02T18:28:40.253680+00:00",
+    "prev_hash": "b8eb507efd720fcbafc4e70a6acd99ebb20d82e3bc4262038909f6ec0cac5d90",
+    "data_hash": "5d11035f93e8c136070d032e6fdc23ff937882be301436340dda0a44a00276f3",
+    "data": {
+      "fingerprint": "9686591e2d739f5a6bcc9e3e444c2c914cbd06cf5fa8e5ccc28814ffb6aa4b09",
+      "mode": "evm",
+      "txHash": "0x669da301228194154836c9d7425ed2747479bd3552acbd34c6eb2fdea2c59773",
+      "blockNumber": 46555279,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x669da301228194154836c9d7425ed2747479bd3552acbd34c6eb2fdea2c59773",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 6,
+        "title": "Spots on pillow : r/Bedbugs",
+        "link": "https://www.reddit.com/r/Bedbugs/comments/1mcz4ho/spots_on_pillow/",
+        "source": "Reddit",
+        "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcRFeJS-IhfJCysoVmCqJ1d-1lzbIHTsbcy4DrBsZJpxQ31zznhym7THnNEKCEnngpvdl4aupEFtEblIPBEMJY7_biy055d40m6TYfVg7CpFOrWOXw",
+        "thumbnail": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTC0X4ogsry9RvhnHXDoNkTLRhwgNVPUruzyqyCTuF3vfJvAKvB",
+        "thumbnail_width": 194,
+        "thumbnail_height": 259,
+        "image": "https://preview.redd.it/spots-on-pillow-v0-wyf4p6ggfyff1.jpeg?width=640&crop=smart&auto=webp&s=48088cf8df5ce8d8ada5d261ff8f867b747e1580",
+        "image_width": 480,
+        "image_height": 640,
+        "_face_sim": null
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.55036461353302,
+        "bbox": [
+          304,
+          1016,
+          141,
+          264
+        ],
+        "embedding_hash": "0f1f1f1f3f3c3040"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 0
+    },
+    "hash": "e76c150da998070e84df251228d2728a57a441f4e561146738ba991e819ce8cb"
+  },
+  {
+    "index": 20,
+    "timestamp": "2026-09-02T18:35:02.534488+00:00",
+    "prev_hash": "e76c150da998070e84df251228d2728a57a441f4e561146738ba991e819ce8cb",
+    "data_hash": "c36ea903746df679466afac4724f262faf4ad7eae8c6925171abb22694e96e99",
+    "data": {
+      "fingerprint": "0b51cd31ce162113e6a278df29a86a5aefec63895be3c80dd2d01b997dc6d7ed",
+      "mode": "evm",
+      "txHash": "0x612d6e3d795e34b3380e55c5b4585421a37cce996a9e9397a8916537fc4e5ed4",
+      "blockNumber": 46555657,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x612d6e3d795e34b3380e55c5b4585421a37cce996a9e9397a8916537fc4e5ed4",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 34,
+        "title": "Hrishab Surana - MSc in Data Science| SQL, Tableau, E ...",
+        "link": "https://uk.linkedin.com/in/hrishab-surana",
+        "source": "LinkedIn",
+        "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcTnhi1Uxnvmh9iRY9yWO9-h39SDenuGhF9nk-N_9aTKQAjAJWkjuwpdtW4jAv2zsI_5cs_HpEJJBcgPPvGklGfeUGFR82-ANgbqsB6jhcIoP5wn4qg",
+        "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcR1MW6NJBQqhrahce7-2HAAOeGXvOBb365YG-jX9UA23cSMdvDq",
+        "thumbnail_width": 200,
+        "thumbnail_height": 200,
+        "image": "https://media.licdn.com/dms/image/v2/C5603AQHoBPOFsas76Q/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1588784144580?e=2147483647&v=beta&t=-7fRzgMQ_-E3cHWJe9u25rUMVS4_Lc8Nw7hxR2-ggnA",
+        "image_width": 200,
+        "image_height": 200,
+        "_face_sim": 56.8
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.908204972743988,
+        "bbox": [
+          443,
+          381,
+          138,
+          164
+        ],
+        "embedding_hash": "c010e0f8f07062e2"
+      },
+      "search_mode": "live",
+      "reddit_found": false,
+      "face_similar_count": 28
+    },
+    "hash": "a5c1b5916025e344b4f86a964bb41c08cf39a25325b29dd25da99d3644a37d4d"
   }
 ]

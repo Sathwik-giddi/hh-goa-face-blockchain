@@ -409,19 +409,35 @@ async function runScan(faceIndex){
   }
 
   if(j.multi_face){
-    facePickTitle.textContent=j.num_faces+' faces detected — pick the one to search';
+    facePickTitle.textContent=j.num_faces+' faces detected — pick the person to search (highlighted = main subject)';
     facePickGrid.innerHTML='';
     (j.faces||[]).forEach((f,i)=>{
-      const btn=el('button',{class:'border border-line bg-white p-0.5 hover:border-veridian transition','aria-label':'use face '+(i+1)});
-      const img=el('img',{alt:'face '+(i+1),class:'w-full h-16 object-cover'});
+      const main=i===0;
+      const btn=el('button',{
+        class:'border-2 p-0.5 bg-white transition '+(main?'border-veridian':'border-line hover:border-slate'),
+        title:main?'main subject (largest face)':'face '+(i+1),
+        'aria-label':'use '+(main?'main subject':'face '+(i+1)),
+      });
+      const img=el('img',{alt:main?'main subject':'face '+(i+1),class:'w-full h-20 object-cover'});
       img.src='/'+f.crop_path+'?t='+Date.now();
       img.addEventListener('error',()=>{ btn.style.opacity='0.3'; });
       btn.appendChild(img);
+      btn.appendChild(el('div',{class:'text-[9px] font-mono text-center py-0.5 '+(main?'text-veridian font-semibold':'text-slate'),
+        text:main?'MAIN · '+f.conf.toFixed(2):'conf '+f.conf.toFixed(2)}));
       btn.addEventListener('click',()=>runScan(f.index));
       facePickGrid.appendChild(btn);
     });
     facePick.classList.remove('hidden');
-    setText(status,'pick a face above to continue');
+    setText(status,'pick a face above to continue — the search runs on the face you choose');
+    status.className='mt-2.5 text-xs font-mono text-signal';
+    scanBtn.disabled=false; return;
+  }
+
+  // no confident match anywhere in the index → honest stop, nothing anchored
+  if(j.no_match){
+    results.classList.remove('hidden');
+    renderNoMatch(j);
+    setText(status,'✗ no matching public content — nothing was anchored on-chain');
     status.className='mt-2.5 text-xs font-mono text-signal';
     scanBtn.disabled=false; return;
   }
@@ -436,6 +452,66 @@ async function runScan(faceIndex){
   verifyInput.value=j.fingerprint.fingerprint_sha256;
   healthCheck();
   scanBtn.disabled=false;
+}
+
+function renderNoMatch(j){
+  const f=j.face||{}, s=j.search||{}, t=now();
+  stampLedger('Input scan','',t);
+  setTimeout(()=>stampLedger('Face capture',f.embedding_hash||'',t,(f.num_faces||0)+' faces detected'),120);
+  const li=ledger.querySelector('[data-stage="Source located"]');
+  if(li){
+    li.innerHTML='';
+    li.className='relative pl-6 pb-5';
+    li.appendChild(el('span',{class:'absolute -left-[9px] top-0.5 w-[22px] h-[22px] rounded-full border-[1.5px] border-signal bg-signalSoft text-signal text-[11px] flex items-center justify-center flex-none',text:'!'}));
+    li.appendChild(el('div',{class:'text-[13px] font-semibold text-ink',text:'Source located'}));
+    li.appendChild(el('div',{class:'text-[11px] font-mono text-signal',text:'· no matching content'}));
+    li.appendChild(el('div',{class:'text-[11px] text-slate',text:'look-alikes not anchored'}));
+  }
+  ['Fingerprint','On-chain record','Re-verification'].forEach(label=>{
+    const l=ledger.querySelector('[data-stage="'+label+'"]'); if(!l) return;
+    const sub=l.querySelectorAll('[data-sub]')[0];
+    if(sub){ sub.textContent='· not run'; }
+  });
+
+  // stage 01
+  $('#s1Meta').textContent=(f.engine||'')+' · conf '+(Number(f.conf)||0).toFixed(2);
+  if(f.crop_path){
+    crop.onload=()=>{ cropWrap.classList.remove('hidden'); previewWrap.classList.add('sm:grid-cols-2'); };
+    crop.src='/'+f.crop_path+'?t='+Date.now();
+    const c2=$('#crop2'); c2.src='/'+f.crop_path+'?t='+Date.now();
+  }
+  const ff=$('#faceFacts'); ff.innerHTML='';
+  ff.appendChild(fact('engine',f.engine||'—',true));
+  ff.appendChild(fact('faces detected',String(f.num_faces)));
+  ff.appendChild(fact('pHash embedding',f.embedding_hash||'—',true));
+
+  // stage 02 — honest verdict
+  const mb=$('#matchBox'); mb.innerHTML='';
+  mb.appendChild(el('div',{class:'border border-signal/40 bg-signalSoft p-4'}));
+  const box=mb.firstChild;
+  box.appendChild(el('div',{class:'font-semibold text-[15px] text-signal',text:'No matching public content found for this face'}));
+  box.appendChild(el('div',{class:'text-[13px] text-slate mt-1.5',text:j.reason||''}));
+  box.appendChild(el('div',{class:'text-[12px] text-slate mt-2',text:'This is the correct outcome for a face with no public footprint — the pipeline stops instead of anchoring a look-alike. Try the lena sample for a guaranteed match, or a photo whose face appears on indexed public pages.'}));
+  const hits=$('#hits'); hits.innerHTML='';
+  (s.hits||[]).slice(0,4).forEach(h=>{
+    const row=el('div',{class:'border border-line bg-white p-2.5 flex gap-3 opacity-70'});
+    const img=el('img',{class:'w-12 h-12 object-cover border border-line flex-none',alt:''});
+    const ts=safeUrl(h.thumbnail); if(ts) img.src=ts;
+    img.addEventListener('error',()=>{ img.style.opacity='0.25'; });
+    row.appendChild(img);
+    const meta=el('div',{class:'min-w-0 flex-1'});
+    meta.appendChild(el('div',{class:'text-[13px] font-medium truncate',text:(h.title||'').slice(0,60)}));
+    meta.appendChild(el('div',{class:'text-[11px] font-mono text-slate',text:(h.source||'?')+(h._face_sim!=null?' · '+h._face_sim+'%':' · no face')}));
+    if(h.link){ const ls=safeUrl(h.link); if(ls) meta.appendChild(el('a',{href:ls,target:'_blank',rel:'noopener noreferrer',class:'text-[11px] text-veridian hover:underline',text:'open ↗'})); }
+    row.appendChild(meta);
+    hits.appendChild(row);
+  });
+  // stages 03-05 marked not run
+  [['fpFacts','not run — no match to fingerprint'],['chainFacts','not run — nothing to anchor'],['reverifyFacts','not run — nothing to verify']].forEach(([id,note])=>{
+    const node=$('#'+id); node.innerHTML='';
+    node.appendChild(el('div',{class:'text-slate italic',text:note}));
+  });
+  $('#fpBig').textContent='—';
 }
 
 function render(j){

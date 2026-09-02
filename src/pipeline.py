@@ -65,7 +65,11 @@ def run_pipeline(
         print(f"  ✓ [{top.get('source')}] face_sim={sim if sim is not None else 'n/a'}% {top.get('title', '')[:80]}")
         print(f"    {top.get('link')}")
         if sim is None or sim < 36.3:
-            print("  ⚠ no confident face match — closest indexed visual only, not an identity match")
+            raise RuntimeError(
+                "No confident facial match in the public index (best hits had no comparable face). "
+                "The pipeline will not anchor a look-alike page as evidence — try a face with a "
+                "public footprint (e.g., the lena sample or a public profile photo)."
+            )
 
     if verbose:
         print(f"[5/8] FINGERPRINT (deterministic canonical record → SHA-256)")

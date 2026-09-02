@@ -145,6 +145,27 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         MIN_FACE_SIM = 36.3  # SFace same-person cosine threshold
         confident = top.get("_face_sim") is not None and top["_face_sim"] >= MIN_FACE_SIM
 
+        # §26: never convert "no match" into anchored look-alike evidence.
+        # Stop here, honestly, before the blockchain stage.
+        if not confident:
+            face_bearing = [h for h in search.get("all_hits", []) if h.get("_face_sim") is not None]
+            return {
+                "no_match": True,
+                "face": face,
+                "search": {
+                    "mode": search["mode"],
+                    "reddit_found": search.get("reddit_found"),
+                    "num_hits": len(search.get("all_hits", [])),
+                    "face_similar_count": search.get("face_similar_count"),
+                    "confident": False,
+                    "top": None,
+                    "hits": face_bearing[:4],
+                },
+                "reason": ("No publicly indexed content contains a similar enough face to this scan "
+                           "(best candidates had no comparable face). Nothing was anchored on-chain — "
+                           "the pipeline does not record look-alike pages as evidence."),
+            }
+
         fp = fingerprint_post(top, image_path=face["crop_path"])
         from src.utils import download_image
         post_image = download_image(top.get("thumbnail") or "", OUTPUTS / "_post_image.jpg") \

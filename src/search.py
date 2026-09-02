@@ -9,6 +9,7 @@ import os
 import tempfile
 import threading
 from pathlib import Path
+from urllib.parse import urlparse
 
 import cv2
 import numpy as np
@@ -122,8 +123,43 @@ def _lens_hits(image_path: Path, api_key: str) -> tuple:
     image_id = _serpapi_upload(upload_path, api_key)
     raw = _lens_search(image_id, api_key)
     vm = list(raw.get("visual_matches") or raw.get("image_results") or [])
-    vm += list(raw.get("exact_matches") or [])
-    return image_id, _dedupe(vm), [("lens:" + image_path.name, raw)]
+    exact = list(raw.get("exact_matches") or [])
+    for h in exact:
+        h["_exact"] = True  # Google asserts these contain the very same image
+    return image_id, _dedupe(vm + exact), [("lens:" + image_path.name, raw)]
+
+
+def _reg_domain(host: str) -> str:
+    """Last two labels of a host — coarse registrable-domain check."""
+    parts = (host or "").lower().split(":")[0].split(".")
+    return ".".join(parts[-2:]) if len(parts) >= 2 else host
+
+
+def _validate_link(url: str) -> tuple:
+    """Fetch a candidate's source page; return (valid, note, final_url).
+
+    A valid source page: reachable (HTTP 200), still an HTML page, and NOT
+    redirected to an unrelated domain (link rot — e.g. a defunct site now
+    bouncing to a geo-block page must never be cited as evidence).
+    """
+    if not url:
+        return False, "no link", url
+    try:
+        r = requests.get(url, timeout=8, allow_redirects=True, stream=True,
+                         headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                                  "Accept": "text/html,application/xhtml+xml"})
+        ct = (r.headers.get("content-type") or "").lower()
+        if r.status_code >= 400:
+            return False, f"HTTP {r.status_code}", str(r.url)
+        if ct and not (ct.startswith("text/html") or ct.startswith("application/xhtml") or ct.startswith("text/plain")):
+            return False, f"non-html ({ct.split(';')[0]})", str(r.url)
+        origin_host = _reg_domain(urlparse(url).netloc)
+        final_host = _reg_domain(urlparse(str(r.url)).netloc)
+        if final_host != origin_host:
+            return False, f"redirected off-site → {final_host}", str(r.url)
+        return True, "reachable", str(r.url)
+    except Exception as e:
+        return False, str(e)[:40], url
 
 
 def _reverse_hits(image_id: str, api_key: str) -> tuple:
@@ -267,26 +303,43 @@ def reverse_image_search(
 
     # Score every candidate's face in parallel; hard deadline so stragglers
     # never stall the pipeline (unscored = honest None, not a fake number).
+    # In the same pass, validate every candidate's source page: a candidate is
+    # only citable evidence if its page is reachable and not link-rotted.
     sims = [None] * len(hits)
-    with ThreadPoolExecutor(max_workers=12) as ex:
-        futures = {ex.submit(_score_thumbnail_face, h.get("thumbnail") or "", h.get("image") or "", query_feat): i
-                   for i, h in enumerate(hits)}
-        done, _pending = wait(futures, timeout=35)
-        for fut in done:
-            i = futures[fut]
-            try:
-                s, _err = fut.result()
-            except Exception:
-                s = None
-            sims[i] = s
+    links = [(False, "not checked", "")] * len(hits)
 
-    for h, s in zip(hits, sims):
+    def _score_one(i, h):
+        s, _e = (None, None)
+        try:
+            s, _e = _score_thumbnail_face(h.get("thumbnail") or "", h.get("image") or "", query_feat)
+        except Exception:
+            s = None
+        ok, note, final = _validate_link(h.get("link") or h.get("url") or "")
+        return i, s, (ok, note, final)
+
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        futures = {ex.submit(_score_one, i, h): i for i, h in enumerate(hits)}
+        done, _pending = wait(futures, timeout=40)
+        for fut in done:
+            try:
+                i, s, linkres = fut.result()
+            except Exception:
+                continue
+            sims[i] = s
+            links[i] = linkres
+
+    for h, s, lr in zip(hits, sims, links):
         h["_face_sim"] = s
+        h["_link_valid"], h["_link_note"], h["_link_final"] = lr
 
     prefer = (prefer_source or "reddit").lower()
     def rank(h):
-        # Primary: face-embedding similarity (higher = better match).
-        # Secondary: reddit preference; tertiary: original Lens position.
+        # Precision-first ordering:
+        #   1. citable source (link reachable, no off-site redirect) — a dead
+        #      or rotted page is NEVER evidence, however similar the face;
+        #   2. face-embedding similarity (higher = better match);
+        #   3. exact_matches first (Google asserts same image);
+        #   4. source preference (reddit), then Lens position.
         s = h.get("_face_sim")
         sim_key = -(s if s is not None else -1)
         boost = -10 if (h.get("source") or "").lower() == prefer else 0
@@ -294,12 +347,23 @@ def reverse_image_search(
             dl = (h.get("displayed_link") or h.get("link") or "").lower()
             if "reddit.com" in dl:
                 boost = -10
-        return (sim_key, boost, h.get("position", 999))
+        return (
+            0 if h.get("_link_valid") else 1,
+            sim_key,
+            0 if h.get("_exact") else 1,
+            boost,
+            h.get("position", 999),
+        )
 
     vm_sorted = sorted(hits, key=rank)
-    face_similar = [h for h in vm_sorted if (h.get("_face_sim") or 0) >= min_face_similarity]
+    face_similar = [h for h in vm_sorted
+                    if (h.get("_face_sim") or 0) >= min_face_similarity and h.get("_link_valid")]
     use = face_similar if face_similar else vm_sorted
     top = use[0] if use else vm_sorted[0]
+    # A result is only confident when the face matches AND the page is citable.
+    top_confident = top in face_similar
+    if top_confident:
+        top["_link_note"] = "source page reachable"
 
     reddit_found = any(
         (h.get("source") or "").lower() == "reddit" or "reddit.com" in (h.get("displayed_link") or h.get("link") or "").lower()
@@ -312,6 +376,7 @@ def reverse_image_search(
         "query_phash": query_hash,
         "embed_method": embed_method,
         "face_similar_count": len(face_similar),
+        "link_valid_count": sum(1 for h in hits if h.get("_link_valid")),
         "total_hits": len(hits),
     }
     return {
@@ -320,6 +385,7 @@ def reverse_image_search(
         "visual_matches": use,
         "all_hits": vm_sorted,
         "top_match": top,
+        "top_confident": top_confident,
         "reddit_found": reddit_found,
         "face_similar_count": len(face_similar),
         "num_queries": len(queries),

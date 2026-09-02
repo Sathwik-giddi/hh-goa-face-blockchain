@@ -62,13 +62,14 @@ def run_pipeline(
         print(f"  ✓ mode={search['mode']} queries={search.get('num_queries', 1)} hits={len(search.get('all_hits', []))} (face-embedded {search.get('face_similar_count')}) reddit_found={search.get('reddit_found')}")
         print(f"[4/8] MATCH")
         sim = top.get("_face_sim")
-        print(f"  ✓ [{top.get('source')}] face_sim={sim if sim is not None else 'n/a'}% {top.get('title', '')[:80]}")
+        link_ok = bool(top.get("_link_valid"))
+        print(f"  ✓ [{top.get('source')}] face_sim={sim if sim is not None else 'n/a'}% link={'✓ ' + top.get('_link_note','') if link_ok else '✗ ' + top.get('_link_note','unverified')} {top.get('title', '')[:70]}")
         print(f"    {top.get('link')}")
-        if sim is None or sim < 36.3:
+        if sim is None or sim < 42.5 or not link_ok:
             raise RuntimeError(
-                "No confident facial match in the public index (best hits had no comparable face). "
-                "The pipeline will not anchor a look-alike page as evidence — try a face with a "
-                "public footprint (e.g., the lena sample or a public profile photo)."
+                "No citable match: the best candidates either do not contain a similar enough "
+                "face or their source pages are unreachable/redirected (link rot). The pipeline "
+                "will not anchor unverified evidence — try a face with a public footprint."
             )
 
     if verbose:

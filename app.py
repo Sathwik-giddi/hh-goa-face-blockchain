@@ -158,7 +158,8 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         if not top:
             raise HTTPException(404, "Live Lens returned 0 hits — no public indexed copy of this face. Try a publicly posted image (IG/X/Reddit).")
         MIN_FACE_SIM = 42.5  # ArcFace cosine same-person threshold (calibrated)
-        confident = top.get("_face_sim") is not None and top["_face_sim"] >= MIN_FACE_SIM
+        confident = bool(search.get("top_confident")) and top.get("_face_sim") is not None \
+            and top["_face_sim"] >= MIN_FACE_SIM
 
         # §26: never convert "no match" into anchored look-alike evidence.
         # Stop here, honestly, before the blockchain stage.
@@ -176,9 +177,10 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
                     "top": None,
                     "hits": face_bearing[:4],
                 },
-                "reason": ("No publicly indexed content contains a similar enough face to this scan "
-                           "(best candidates had no comparable face). Nothing was anchored on-chain — "
-                           "the pipeline does not record look-alike pages as evidence."),
+                "reason": ("No publicly indexed page both (a) contains a face similar enough to this "
+                           "scan and (b) is still reachable as a real page. Nothing was anchored "
+                           "on-chain — the pipeline does not record look-alike or link-rotted pages "
+                           "as evidence."),
             }
 
         fp = fingerprint_post(top, image_path=face["crop_path"])

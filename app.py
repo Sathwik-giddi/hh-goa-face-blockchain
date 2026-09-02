@@ -84,7 +84,7 @@ def verify_api(hash: str = Query("")):
 
 
 @app.post("/api/scan")
-async def scan(file: UploadFile = File(...)):
+async def scan(file: UploadFile = File(...), face_index: int | None = Query(None)):
     ct = (file.content_type or "").lower()
     if not (ct.startswith("image/") or ct in ALLOWED_IMG):
         raise HTTPException(400, "Upload an image (jpg/png/webp/heic)")
@@ -118,9 +118,18 @@ async def scan(file: UploadFile = File(...)):
         raise HTTPException(400, "empty file")
 
     try:
-        face = detect_and_encode(tmp, out_dir=OUTPUTS)
+        face = detect_and_encode(tmp, out_dir=OUTPUTS, face_index=face_index)
         if not face.get("crop_path"):
             raise HTTPException(422, face.get("warning", "no face detected"))
+
+        # Multiple faces and no explicit choice → ask the user to pick.
+        opts = face.get("face_options") or []
+        if len(opts) > 1 and face_index is None:
+            return {
+                "multi_face": True,
+                "num_faces": face["num_faces"],
+                "faces": opts,
+            }
 
         try:
             search = reverse_image_search(face["crop_path"], original_path=str(tmp))
@@ -133,6 +142,8 @@ async def scan(file: UploadFile = File(...)):
         top = search.get("top_match")
         if not top:
             raise HTTPException(404, "Live Lens returned 0 hits — no public indexed copy of this face. Try a publicly posted image (IG/X/Reddit).")
+        MIN_FACE_SIM = 36.3  # SFace same-person cosine threshold
+        confident = top.get("_face_sim") is not None and top["_face_sim"] >= MIN_FACE_SIM
 
         fp = fingerprint_post(top, image_path=face["crop_path"])
         fingerprint = fp["fingerprint_sha256"]
@@ -155,6 +166,7 @@ async def scan(file: UploadFile = File(...)):
                 "reddit_found": search.get("reddit_found"),
                 "num_hits": len(vm),
                 "face_similar_count": search.get("face_similar_count"),
+                "confident": confident,
                 "top": top,
                 "hits": vm[:8],
             },

@@ -524,5 +524,48 @@
       "face_similar_count": 0
     },
     "hash": "b6568a9f90e07f30b7ff5518225739df5366e12d48f0c1b4b413a335cb267e0b"
+  },
+  {
+    "index": 13,
+    "timestamp": "2026-09-02T17:41:19.186107+00:00",
+    "prev_hash": "b6568a9f90e07f30b7ff5518225739df5366e12d48f0c1b4b413a335cb267e0b",
+    "data_hash": "fd00e259cf641b32c82fa09c5a1278d1c5496ee5d7428525e1937c49b7a2137c",
+    "data": {
+      "fingerprint": "36ae3d5e3d745e11f8b60b0e97b6b451858bebe4154f2f422b85d9ca8caff5fd",
+      "mode": "evm",
+      "txHash": "0x0544caf8b0fe38a726a2812a487b4631cb6f29f6be4c0c7cc30b4c8348a5ab7c",
+      "blockNumber": 46552438,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x0544caf8b0fe38a726a2812a487b4631cb6f29f6be4c0c7cc30b4c8348a5ab7c",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 6,
+        "title": "Spots on pillow : r/Bedbugs",
+        "link": "https://www.reddit.com/r/Bedbugs/comments/1mcz4ho/spots_on_pillow/",
+        "source": "Reddit",
+        "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcRFeJS-IhfJCysoVmCqJ1d-1lzbIHTsbcy4DrBsZJpxQ31zznhym7THnNEKCEnngpvdl4aupEFtEblIPBEMJY7_biy055d40m6TYfVg7CpFOrWOXw",
+        "thumbnail": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTC0X4ogsry9RvhnHXDoNkTLRhwgNVPUruzyqyCTuF3vfJvAKvB",
+        "thumbnail_width": 194,
+        "thumbnail_height": 259,
+        "image": "https://preview.redd.it/spots-on-pillow-v0-wyf4p6ggfyff1.jpeg?width=640&crop=smart&auto=webp&s=48088cf8df5ce8d8ada5d261ff8f867b747e1580",
+        "image_width": 480,
+        "image_height": 640,
+        "_face_sim": null
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.55036461353302,
+        "bbox": [
+          304,
+          1016,
+          141,
+          264
+        ],
+        "embedding_hash": "0f1f1f1f3f3c3040"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 0
+    },
+    "hash": "d32cb22532dd614aaf10f5f9c6a457db56747bcaa04e8de30461efee8c59c288"
   }
 ]

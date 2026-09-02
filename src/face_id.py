@@ -278,8 +278,13 @@ def encode_phash(image_path) -> str:
     return f"{packed:016x}"
 
 
-def detect_and_encode(image_path, out_dir: Path = Path("outputs")) -> dict:
-    """Primary entry: detect face, crop, encode. Returns dict for pipeline."""
+def detect_and_encode(image_path, out_dir: Path = Path("outputs"), face_index: int | None = None) -> dict:
+    """Primary entry: detect face(s), crop, encode. Returns dict for pipeline.
+
+    face_index: which detected face to use (default: largest). When multiple
+    faces exist and face_index is None, face_options lists all crops so the
+    caller can ask the user to pick.
+    """
     image_path = Path(image_path)
     if not image_path.exists():
         raise FileNotFoundError(f"Input not found: {image_path}")
@@ -327,7 +332,21 @@ def detect_and_encode(image_path, out_dir: Path = Path("outputs")) -> dict:
             "warning": "no face detected — upload a photo with a visible face",
         }
 
-    best = faces[0]
+    best = faces[face_index] if (face_index is not None and 0 <= face_index < len(faces)) else faces[0]
+
+    # Per-face crops so the UI can disambiguate multi-face uploads.
+    face_options = []
+    for i, f in enumerate(faces[:6]):
+        opt_path = out_dir / f"face_crop_{i}.jpg"
+        try:
+            crop_face(img, f["bbox"], opt_path)
+            face_options.append({
+                "index": i, "bbox": f["bbox"], "conf": round(float(f["conf"]), 3),
+                "crop_path": str(opt_path),
+            })
+        except Exception:
+            continue
+
     crop_path = out_dir / "face_crop.jpg"
     try:
         crop_face(img, best["bbox"], crop_path)
@@ -343,7 +362,9 @@ def detect_and_encode(image_path, out_dir: Path = Path("outputs")) -> dict:
         "engine": engine_used,
         "bbox": best["bbox"], "conf": best["conf"],
         "num_faces": len(faces),
+        "selected_index": face_index if (face_index is not None and 0 <= face_index < len(faces)) else 0,
         "crop_path": str(crop_path),
         "embedding_hash": encode_phash(crop_path),
         "all_faces": faces,
+        "face_options": face_options,
     }

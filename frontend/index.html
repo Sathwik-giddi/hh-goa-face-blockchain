@@ -53,6 +53,10 @@ tailwind.config={theme:{extend:{
         <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="preview" alt="upload preview" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Source</div></div>
         <div id="cropWrap" class="hidden rounded-lg overflow-hidden border border-line bg-slate-50"><img id="crop" alt="detected face crop" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Detected face</div></div>
       </div>
+      <div id="facePick" class="hidden mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <div class="text-xs font-semibold text-amber-800 mb-2" id="facePickTitle">Multiple faces detected — pick the one to search</div>
+        <div id="facePickGrid" class="grid grid-cols-3 gap-2 sm:grid-cols-5"></div>
+      </div>
       <button id="scanBtn" class="mt-4 w-full h-11 rounded-lg bg-accent text-white font-semibold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Run pipeline</button>
       <div id="status" class="mt-2 text-xs font-mono text-muted min-h-[1.25em]"></div>
     </div>
@@ -112,6 +116,7 @@ tailwind.config={theme:{extend:{
 "use strict";
 const $=s=>document.querySelector(s);
 const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), previewWrap=$('#previewWrap'), crop=$('#crop'), cropWrap=$('#cropWrap'), scanBtn=$('#scanBtn'), status=$('#status');
+const facePick=$('#facePick'), facePickTitle=$('#facePickTitle'), facePickGrid=$('#facePickGrid');
 const faceBox=$('#faceBox'), faceMeta=$('#faceMeta'), socialBox=$('#socialBox'), hits=$('#hits'), redditBadge=$('#redditBadge'), chainBox=$('#chainBox'), receiptEl=$('#receipt');
 const verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'), heightEl=$('#height'), chainList=$('#chainList'), health=$('#health');
 
@@ -180,6 +185,7 @@ function showPreview(file){
   previewUrl = URL.createObjectURL(file);
   preview.src = previewUrl;
   cropWrap.classList.add('hidden');
+  facePick.classList.add('hidden');
   previewWrap.classList.remove('hidden');
   previewWrap.classList.remove('grid-cols-2');
   previewWrap.classList.add('grid-cols-1');
@@ -204,18 +210,22 @@ function revealResults(){
   if(tagline) tagline.classList.add('hidden');
 }
 
-scanBtn.addEventListener('click', async()=>{
+scanBtn.addEventListener('click', ()=>runScan());
+
+async function runScan(faceIndex){
   if(!fileInput.files[0]){ setText(status, 'Pick an image first'); status.className='mt-2 text-xs font-mono text-bad'; return; }
   scanBtn.disabled = true;
+  facePick.classList.add('hidden');
   setText(status, '[1/4] Detecting face…');
   status.className='mt-2 text-xs font-mono text-accent';
   const fdata = new FormData();
   fdata.append('file', fileInput.files[0]);
+  const url = faceIndex != null ? '/api/scan?face_index='+faceIndex : '/api/scan';
   const t1=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[2/4] Searching the web via Google Lens… (8–15s)'); }}, 2500);
   const t2=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[3/4] Anchoring on Polygon Amoy…'); }}, 12000);
   let resp, j;
   try{
-    resp = await fetch('/api/scan', {method:'POST', body:fdata});
+    resp = await fetch(url, {method:'POST', body:fdata});
     try{ j = await resp.json(); } catch(_){ j = null; }
   }catch(e){
     clearTimeout(t1); clearTimeout(t2);
@@ -229,6 +239,26 @@ scanBtn.addEventListener('click', async()=>{
     const msg = (j && (j.detail || j.error)) || resp.statusText || ('HTTP '+resp.status);
     setText(status, '✗ '+msg);
     status.className='mt-2 text-xs font-mono text-bad';
+    scanBtn.disabled=false;
+    return;
+  }
+
+  // multi-face: ask which face to search
+  if(j.multi_face){
+    facePickTitle.textContent = j.num_faces + ' faces detected — pick the one to search';
+    facePickGrid.innerHTML='';
+    for(const f of (j.faces || [])){
+      const btn=el('button',{class:'rounded-lg overflow-hidden border-2 border-line hover:border-accent bg-white transition', title:'face '+(f.index+1)});
+      const img=el('img',{alt:'face '+(f.index+1), class:'w-full h-16 object-cover'});
+      img.src = '/'+f.crop_path+'?t='+Date.now();
+      img.addEventListener('error', ()=>{ btn.style.opacity='0.3'; });
+      btn.appendChild(img);
+      btn.addEventListener('click', ()=>{ runScan(f.index); });
+      facePickGrid.appendChild(btn);
+    }
+    facePick.classList.remove('hidden');
+    setText(status, 'Pick a face above to continue');
+    status.className='mt-2 text-xs font-mono text-warn';
     scanBtn.disabled=false;
     return;
   }
@@ -263,9 +293,11 @@ scanBtn.addEventListener('click', async()=>{
   } else {
     const top = s.top;
     const sim = top._face_sim != null ? top._face_sim : null;
+    const confident = s.confident === true;
+    socialBox.innerHTML='';
     const head = el('div',{class:'fade-in'});
     head.appendChild(el('div',{class:'text-ink font-medium'},[
-      document.createTextNode('Best match — '),
+      document.createTextNode(confident ? 'Best match — ' : 'Closest result (no confident face match) — '),
       el('span',{class:'text-accent', text: top.source || '—'}),
     ]));
     head.appendChild(el('div',{class:'text-sm text-slate-600 mt-0.5', text:(top.title||'').slice(0,90)}));
@@ -274,10 +306,13 @@ scanBtn.addEventListener('click', async()=>{
       if(safe) head.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline break-all block mt-1', text: 'open post ↗'}));
     }
     if(sim != null){
-      const tone = sim >= 85 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                 : sim >= 70 ? 'bg-amber-50 text-amber-700 border-amber-200'
+      const tone = sim >= 50 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                 : sim >= 36.3 ? 'bg-amber-50 text-amber-700 border-amber-200'
                  : 'bg-slate-100 text-slate-600 border-slate-200';
       head.appendChild(el('span',{class:'inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full border ' + tone, text: sim + '% face similarity'}));
+    }
+    if(!confident){
+      head.appendChild(el('div',{class:'text-xs text-warn mt-2', text:'⚠ The matched page does not contain a similar enough face. This is a visual look-alike from the index, not an identity match — nothing was falsely claimed.'}));
     }
     socialBox.appendChild(head);
 
@@ -356,7 +391,7 @@ scanBtn.addEventListener('click', async()=>{
   verifyInput.value = fp;
   healthCheck();
   scanBtn.disabled = false;
-});
+}
 
 verifyBtn.addEventListener('click', async()=>{
   const h = verifyInput.value.trim();

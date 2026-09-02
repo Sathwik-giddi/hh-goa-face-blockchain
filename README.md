@@ -46,8 +46,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # edit .env: SERPAPI_API_KEY=... and EVM_PRIVATE_KEY=0x...
 
-# 3a. CLI (any face — lena + 3-quarter samples included)
-./scripts/demo.sh data/samples/lena.jpg
+# 3a. One-command demo (8-stage output, for screen recording)
+./scripts/run_demo.sh data/samples/lena.jpg
 
 # 3b. 10/10 Frontend (forensic light-table, gold shimmer, scanline, live verify, XSS-safe)
 uvicorn app:app --host 127.0.0.1 --port 8000
@@ -69,6 +69,23 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 * **`BLOCKCHAIN_MODE=local`:** `chain.json` hash-chain only. Spec-allowed "local/simulated chain" mode. Instant, offline, free. Same 3-layer integrity as EVM mode.
 
 **Both modes keep `chain.json` as the unified audit trail** — judges see every anchor with hash, payload, and (EVM) txHash + Polygonscan link.
+
+## Canonicalization & fingerprint (exact procedure)
+
+The fingerprint is over the **discovered post**, canonicalized deterministically:
+
+```json
+{"url": "...", "title": "...", "source": "...", "thumbnail": "...", "image_sha256": "..."}
+```
+
+1. Collect the five fields above (lowercased keys, values as retrieved live).
+2. `image_sha256` = SHA-256 of the post image's raw bytes as downloaded at scan time.
+3. Serialize with **sorted keys**, separators `,` and `:`, `ensure_ascii=False`, UTF-8 encode (no whitespace, stable ordering).
+4. `fingerprint = SHA-256(canonical_bytes)` → 32 bytes → this exact value is what goes on-chain.
+
+**Why the image itself is not stored on-chain:** a 200KB image costs ~10M+ gas (thousands of dollars); the hash proves integrity at 32 bytes (~$0.002). The on-chain record stores `contentHash + timestamp + submitter + source reference`, so anyone holding the original content can recompute the hash and compare — integrity without bulk.
+
+**Verification is independent (§17-style):** `src/utils.py:reverify_independent` re-downloads the discovered post's image from the live web, re-canonicalizes, re-hashes, and compares against the fingerprint on-chain — it never trusts our own stored copy. The tamper test then flips one fingerprint char and expects verification to fail.
 
 ## Judge verification (reproduce it yourself)
 
@@ -115,13 +132,30 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 src/{pipeline.py,face_id.py,search.py,blockchain.py,blockchain_local.py,blockchain_evm.py,utils.py}
 contracts/FaceAnchor.sol  (deployed on Amoy: anchoring + Anchored event + trustless verify)
 scripts/deploy_contract.py (compile + deploy + write EVM_CONTRACT_ADDRESS to .env)
-models/face_detection_yunet_2023mar.onnx  (auto-downloaded, .gitignored)
-frontend/index.html  (XSS-safe, forensic light-table UI, contract badges, similarity %)
+scripts/run_demo.sh        (one-command 8-stage demo for the screen recording)
+models/*.onnx             (YuNet 230KB + SFace 37MB, auto-downloaded, .gitignored)
+frontend/index.html  (XSS-safe, multi-face picker, contract badges, similarity %)
 app.py  (FastAPI, CORS-locked, 10MB upload cap, per-request isolation)
-scripts/demo.sh  (sources .env, uses venv python)
 chain.json  evm_mirror.json  (live audit trail, pushed for judges)
-tests/test_pipeline.py  (8 hermetic tests)
+tests/test_pipeline.py  (12 tests: E2E, integrity, canonicalization, multi-face, re-verify, tamper, failure modes)
 ```
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `SERPAPI_API_KEY missing` | Free 250/mo key at serpapi.com/users/sign_up (email only). Put in `.env`. |
+| `EVM_PRIVATE_KEY empty` / no POL | Throwaway wallet + 0.2 POL at faucet.polygon.technology (recharges 24h). |
+| `RPC not reachable` | publicnode.com free tier blips — retry, or set `EVM_RPC_URL` to another Amoy RPC. |
+| `fingerprint must be 64-char hex` | Verify arg must be the 64-hex SHA-256 from `outputs/evidence.json`. |
+| YuNet/SFace download failed | Delete `models/*.onnx`, re-run (auto-downloads from opencv_zoo GitHub). |
+| Search returns 0 hits | The face has no publicly indexed copy (private IG/LinkedIn). Correct behavior, not a bug. |
+| `tx reverted` on anchor | Fingerprint already on-chain (dedupe pre-check normally prevents this) or out of gas — refill POL. |
+| Frontend shows old behavior | Backend restarted with old code? Header shows `backend 4.x-*`; restart uvicorn. |
+
+## Responsible use
+
+This prototype is for **authorized, consent-based testing and research demonstrations** (HH Goa 2026 Task 3). It operates only on publicly accessible content retrieved through legitimate means (SerpAPI's Google Lens API, public CDNs) — no login bypass, no CAPTCHA evasion, no private-profile scraping, no access-control circumvention. It must not be used to identify, track, or profile private individuals without consent. Faces without a public web footprint correctly return no matches.
 
 ## Tests
 

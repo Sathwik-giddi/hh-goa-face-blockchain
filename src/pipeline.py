@@ -10,7 +10,7 @@ load_dotenv()
 
 from .face_id import detect_and_encode
 from .search import reverse_image_search
-from .utils import fingerprint_post, safe_filename
+from .utils import fingerprint_post, reverify_independent, download_image
 from .blockchain import anchor, verify
 
 
@@ -33,7 +33,8 @@ def run_pipeline(
         raise FileNotFoundError(f"Image not found: {image}")
 
     if verbose:
-        print(f"\n[1/4] Face scan: {image}")
+        print(f"\n[1/8] INPUT")
+        print(f"  → {image} ({image.stat().st_size} bytes)")
     face = detect_and_encode(image, out_dir=out_dir)
     if not face.get("crop_path"):
         raise RuntimeError(
@@ -41,12 +42,14 @@ def run_pipeline(
             "Use a photo with a visible face (frontal or 3-quarter)."
         )
     if verbose:
-        print(f"  → engine={face['engine']} faces={face['num_faces']} conf={face.get('conf', 0):.2f} crop={face['crop_path']}")
+        print(f"[2/8] FACE")
+        print(f"  ✓ engine={face['engine']} faces={face['num_faces']} conf={face.get('conf', 0):.2f}")
+        print(f"  ✓ embedding (pHash) {face.get('embedding_hash')} → crop {face['crop_path']}")
         if face.get("warning"):
             print(f"  ⚠ {face['warning']}")
 
     if verbose:
-        print(f"[2/4] Social search LIVE (Lens + face re-rank covers any public face, not just celebs)...")
+        print(f"[3/8] WEB SEARCH (live — Google Lens via SerpAPI)")
     search = reverse_image_search(face["crop_path"], original_path=str(image), prefer_source=prefer_source)
     vm = search.get("visual_matches", [])
     top = search.get("top_match")
@@ -56,15 +59,22 @@ def run_pipeline(
             "Try a face that is posted publicly (IG/X/Reddit)."
         )
     if verbose:
-        print(f"  → mode={search['mode']} hits={len(vm)} (face-similar {search.get('face_similar_count')}/{len(search.get('all_hits', []))}) reddit_found={search.get('reddit_found')}")
-        dist = top.get("_face_sim")
-        print(f"  → top: [{top.get('source')}] face_sim={dist if dist is not None else 'n/a'}% {top.get('title', '')[:80]} → {top.get('link')}")
-        if search.get("face_similar_count", 0) == 0:
-            print("  ⚠ No face-similar hits — this face has no public copy. Showing closest visual only.")
+        print(f"  ✓ mode={search['mode']} hits={len(search.get('all_hits', []))} (face-embedded {search.get('face_similar_count')}) reddit_found={search.get('reddit_found')}")
+        print(f"[4/8] MATCH")
+        sim = top.get("_face_sim")
+        print(f"  ✓ [{top.get('source')}] face_sim={sim if sim is not None else 'n/a'}% {top.get('title', '')[:80]}")
+        print(f"    {top.get('link')}")
+        if sim is None or sim < 36.3:
+            print("  ⚠ no confident face match — closest indexed visual only, not an identity match")
 
     if verbose:
-        print(f"[3/4] Fingerprint + blockchain ({os.getenv('BLOCKCHAIN_MODE', 'local')})")
-    fp = fingerprint_post(top, image_path=face["crop_path"])
+        print(f"[5/8] FINGERPRINT (deterministic canonical record → SHA-256)")
+    # §15: hash the post's image as retrieved from the source (not our crop),
+    # so independent re-verification can re-download the same URL and re-hash.
+    post_image = download_image(top.get("thumbnail") or "", out_dir / "_post_image.jpg")
+    if post_image is None and top.get("image"):
+        post_image = download_image(top["image"], out_dir / "_post_image.jpg")
+    fp = fingerprint_post(top, image_path=post_image)
     fingerprint = fp["fingerprint_sha256"]
     payload = {
         "post": top,
@@ -73,18 +83,52 @@ def run_pipeline(
         "reddit_found": search.get("reddit_found"),
         "face_similar_count": search.get("face_similar_count"),
     }
-    receipt = anchor(fingerprint, payload, chain_file=str(chain_file))
     if verbose:
-        print(f"  → fingerprint {fingerprint[:16]}... anchored → {receipt}")
+        print(f"  ✓ canonical record fields: url, title, source, thumbnail, image_sha256 (sorted keys, UTF-8)")
+        print(f"  ✓ fingerprint {fingerprint}")
 
     if verbose:
-        print(f"[4/4] Re-verify (tamper-evident)")
-    v = verify(fingerprint, chain_file=str(chain_file))
+        print(f"[6/8] BLOCKCHAIN ({os.getenv('BLOCKCHAIN_MODE', 'local')})")
+    receipt = anchor(fingerprint, payload, chain_file=str(chain_file))
     if verbose:
-        print(f"  → verified={v.get('verified')} {v}")
-        tampered = fingerprint[:-1] + ("0" if fingerprint[-1] != "0" else "1")
-        vt = verify(tampered, chain_file=str(chain_file))
-        print(f"  → tamper test (flipped hash) verified={vt.get('verified')} (expected False) ✓")
+        if receipt.get("deduplicated"):
+            print(f"  ✓ already anchored on-chain (dedupe) — no new tx needed")
+        else:
+            print(f"  ✓ tx submitted + confirmed")
+        print(f"    {receipt.get('txHash') or receipt.get('block_hash')}")
+        if receipt.get("explorerUrl"):
+            print(f"    {receipt['explorerUrl']}")
+
+    if verbose:
+        print(f"[7/8] VERIFICATION (independent)")
+    v = verify(fingerprint, chain_file=str(chain_file))
+    on_chain = v.get("verified") is True
+    if verbose:
+        print(f"  {'✓' if on_chain else '✗'} on-chain read: verified={v.get('verified')}")
+        for t in v.get("txs", [])[:3]:
+            if t.get("via") == "contract":
+                print(f"    contract state anchoredAt ✓ ({t.get('anchoredAt')})")
+            elif t.get("txHash"):
+                print(f"    tx calldata == fingerprint ✓ ({t.get('txHash')[:18]}…)")
+    # §17: re-retrieve the discovered content from the live web, re-canonicalize,
+    # re-hash — compare against the stored fingerprint. Never fakes success.
+    rv = reverify_independent(fp, out_dir=out_dir)
+    if verbose:
+        m = rv.get("match")
+        print(f"  {'✓' if m else '✗'} re-retrieved content re-hash: match={m}"
+              f" (re-downloaded={rv.get('re_downloaded_image')})")
+        print(f"    recomputed {rv.get('recomputed_fingerprint')[:24]}…")
+
+    if verbose:
+        print(f"[8/8] RESULT" + ("  + TAMPER TEST" if on_chain else ""))
+    tampered = fingerprint[:-1] + ("0" if fingerprint[-1] != "0" else "1")
+    vt = verify(tampered, chain_file=str(chain_file))
+    if verbose:
+        print(f"  {'✓ VERIFIED' if on_chain else '✗ NOT VERIFIED'}")
+        print(f"    original fingerprint  {fingerprint}")
+        print(f"    modified fingerprint  {tampered}")
+        print(f"    modified verifies as  {vt.get('verified')} (expected False)")
+        print(f"    → {'TAMPER DETECTED ✓' if vt.get('verified') is False else '⚠ tamper NOT detected'}")
 
     # Save outputs (atomic via temp+replace)
     def _save(name, obj):
@@ -99,19 +143,20 @@ def run_pipeline(
         "search": {"mode": search["mode"], "reddit_found": search.get("reddit_found"),
                     "top_match": top, "num_hits": len(vm),
                     "face_similar_count": search.get("face_similar_count")},
-        "fingerprint": fp, "receipt": receipt, "verify": v,
+        "fingerprint": fp, "receipt": receipt, "verify": v, "reverify": rv,
     })
     _save("search_raw.json", search.get("raw", {}))
     _save("evidence.json", fp)
     _save("receipt.json", receipt)
+    _save("reverify.json", rv)
 
     if verbose:
         print(f"\n✓ Done → {out_dir / 'result.json'}")
         print(f"  face_crop: {face['crop_path']}")
-        print(f"  evidence: {out_dir / 'evidence.json'}  receipt: {out_dir / 'receipt.json'}")
+        print(f"  evidence: {out_dir / 'evidence.json'}  receipt: {out_dir / 'receipt.json'}  reverify: {out_dir / 'reverify.json'}")
         if receipt.get("explorerUrl"):
             print(f"  explorer: {receipt['explorerUrl']}")
-    return {"face": face, "search": search, "fingerprint": fp, "receipt": receipt, "verify": v}
+    return {"face": face, "search": search, "fingerprint": fp, "receipt": receipt, "verify": v, "reverify": rv}
 
 
 def main():

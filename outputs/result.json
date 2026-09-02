@@ -9,6 +9,7 @@
     ],
     "conf": 0.9089785814285278,
     "num_faces": 1,
+    "selected_index": 0,
     "crop_path": "outputs/face_crop.jpg",
     "embedding_hash": "ff0f1e2c3c3c181e",
     "all_faces": [
@@ -22,48 +23,61 @@
         "conf": 0.9089785814285278,
         "engine": "opencv:yunet"
       }
+    ],
+    "face_options": [
+      {
+        "index": 0,
+        "bbox": [
+          207,
+          182,
+          145,
+          206
+        ],
+        "conf": 0.909,
+        "crop_path": "outputs/face_crop_0.jpg"
+      }
     ]
   },
   "search": {
     "mode": "live",
     "reddit_found": true,
     "top_match": {
-      "position": 56,
-      "title": "An analysis of computational models for accelerating the ...",
-      "link": "https://ccc.inaoep.mx/~rcumplido/papers/2015-Rodriguez-An-analisys-of-computational.pdf",
-      "source": "INAOE",
-      "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcSzBzmYfW9pOhRZwZwJzWUr_-1d4JjLzRU5qEVlSxhSU5TBoEuBzIx87eBUCFCOipbLO3jftpzfSg-HlmiD-O3MtxqA3Z-bZwrdKZFU8AVB4F46",
-      "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcThhz6puHAqxoM7XqPNRGjM3OmccC2-mVeLHfpKlkRHj_PJs2SK",
-      "thumbnail_width": 212,
-      "thumbnail_height": 212,
-      "image": "x-raw-image:///b6f881af144a3e1677e83bdc9db7a1504e12e8d5a86ae13787c88f48264719de",
-      "image_width": 212,
-      "image_height": 212,
-      "_face_sim": 88.6
+      "position": 45,
+      "title": "Image processing with Python, NumPy | note.nkmk.me",
+      "link": "https://note.nkmk.me/en/python-numpy-image-processing/",
+      "source": "nkmk note - nkmk.me",
+      "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcR6eVZlxUIUBbiKHHpgbQPAgOAmv-kt02vxx1_wtpVByEpu8HM7DR-pIgRK8VasVHhPGMJ4hDOjZhRRaI6of9pDClmagwBZ8piWD75EX_1mKfM",
+      "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVM7S7cmwbcziNiocHOKXBA8GOx3a3ewF3QNOq6cUoKqPX5AVs",
+      "thumbnail_width": 225,
+      "thumbnail_height": 225,
+      "image": "https://raw.githubusercontent.com/nkmk/python-snippets/a0d39dd5cef8e5ef65444056088e888af5d32bf6/notebook/data/dst/lena_numpy_trim.jpg",
+      "image_width": 256,
+      "image_height": 256,
+      "_face_sim": 94.0
     },
-    "num_hits": 35,
-    "face_similar_count": 35
+    "num_hits": 55,
+    "face_similar_count": 55
   },
   "fingerprint": {
-    "url": "https://ccc.inaoep.mx/~rcumplido/papers/2015-Rodriguez-An-analisys-of-computational.pdf",
-    "title": "An analysis of computational models for accelerating the ...",
-    "source": "INAOE",
-    "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcThhz6puHAqxoM7XqPNRGjM3OmccC2-mVeLHfpKlkRHj_PJs2SK",
-    "image_sha256": "c2db1b9226064d84611b26fec90911f1d8b6e42923ae63bcd50f6c50d8539c2c",
-    "fingerprint_sha256": "9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad",
-    "created_at": "2026-09-02T17:31:05.363057+00:00"
+    "url": "https://note.nkmk.me/en/python-numpy-image-processing/",
+    "title": "Image processing with Python, NumPy | note.nkmk.me",
+    "source": "nkmk note - nkmk.me",
+    "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVM7S7cmwbcziNiocHOKXBA8GOx3a3ewF3QNOq6cUoKqPX5AVs",
+    "image_sha256": "9bac6045f38fb76042d5029ca6987117cbb05c6ce2e33d74f4f5e368a81a24c9",
+    "fingerprint_sha256": "a810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5",
+    "created_at": "2026-09-02T18:01:47.438833+00:00"
   },
   "receipt": {
     "mode": "evm",
-    "via": "contract",
-    "deduplicated": true,
-    "contractAddress": "0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463",
-    "anchoredAt": 1788368529,
-    "explorerUrl": "https://amoy.polygonscan.com/address/0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463",
-    "data_hex": "0x9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad",
+    "txHash": "0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
+    "blockNumber": 46553670,
+    "explorerUrl": "https://amoy.polygonscan.com/tx/0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
+    "data_hex": "0x1a8512eaa810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f50000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000003668747470733a2f2f6e6f74652e6e6b6d6b2e6d652f656e2f707974686f6e2d6e756d70792d696d6167652d70726f63657373696e672f00000000000000000000",
     "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
-    "local_block": 1,
-    "local_block_hash": "03b439bf6c02d7af7f087db0d24ac473088f5e20019deb3ab9b179dabbfb7f45"
+    "via": "contract",
+    "contractAddress": "0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463",
+    "local_block": 16,
+    "local_block_hash": "f3e5c7c598bed45866a4c690da448dcdc08d9c1b8f132449e2fef1aee11411c7"
   },
   "verify": {
     "verified": true,
@@ -72,38 +86,36 @@
         "verified": true,
         "via": "contract",
         "contractAddress": "0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463",
-        "anchoredAt": 1788368529,
+        "anchoredAt": 1788372112,
         "explorerUrl": "https://amoy.polygonscan.com/address/0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463#readContract"
       },
       {
         "verified": true,
-        "txHash": "0xfc7a5656a4cbeb641b53206b3cb47e0dc447f1d8e5cdab35fb7a1bee036ef24e",
-        "blockNumber": 46542620,
-        "explorerUrl": "https://amoy.polygonscan.com/tx/0xfc7a5656a4cbeb641b53206b3cb47e0dc447f1d8e5cdab35fb7a1bee036ef24e",
-        "on_chain_input": "0x9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad",
-        "expected_input": "0x9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad"
-      },
-      {
-        "verified": true,
-        "txHash": "0x7de2eac18f17e667b227f6e2cf2e8528cdff55aea846f4a47736746911f658cb",
-        "blockNumber": 46549317,
-        "explorerUrl": "https://amoy.polygonscan.com/tx/0x7de2eac18f17e667b227f6e2cf2e8528cdff55aea846f4a47736746911f658cb",
-        "on_chain_input": "0x9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad",
-        "expected_input": "0x9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad"
-      },
-      {
-        "verified": true,
-        "txHash": "0x349eb3bffd0e4caadb6bf2ea1bad8aa44809f69a8fcae32fe16efae6eb74804d",
-        "blockNumber": 46550087,
-        "explorerUrl": "https://amoy.polygonscan.com/tx/0x349eb3bffd0e4caadb6bf2ea1bad8aa44809f69a8fcae32fe16efae6eb74804d",
-        "on_chain_input": "0x1a8512ea9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000",
-        "expected_input": "0x9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad"
+        "txHash": "0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
+        "blockNumber": 46553670,
+        "explorerUrl": "https://amoy.polygonscan.com/tx/0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
+        "on_chain_input": "0x1a8512eaa810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f50000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000003668747470733a2f2f6e6f74652e6e6b6d6b2e6d652f656e2f707974686f6e2d6e756d70792d696d6167652d70726f63657373696e672f00000000000000000000",
+        "expected_input": "0xa810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5"
       }
     ],
     "local_block": {
-      "block_index": 1,
-      "block_hash": "03b439bf6c02d7af7f087db0d24ac473088f5e20019deb3ab9b179dabbfb7f45",
-      "timestamp": "2026-09-02T14:57:41.326423+00:00"
+      "block_index": 16,
+      "block_hash": "f3e5c7c598bed45866a4c690da448dcdc08d9c1b8f132449e2fef1aee11411c7",
+      "timestamp": "2026-09-02T18:01:51.711974+00:00"
+    }
+  },
+  "reverify": {
+    "method": "re-retrieve + re-canonicalize + re-hash",
+    "re_downloaded_image": true,
+    "recomputed_fingerprint": "a810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5",
+    "stored_fingerprint": "a810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5",
+    "match": true,
+    "components": {
+      "url": "https://note.nkmk.me/en/python-numpy-image-processing/",
+      "title": "Image processing with Python, NumPy | note.nkmk.me",
+      "source": "nkmk note - nkmk.me",
+      "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVM7S7cmwbcziNiocHOKXBA8GOx3a3ewF3QNOq6cUoKqPX5AVs",
+      "image_sha256": "9bac6045f38fb76042d5029ca6987117cbb05c6ce2e33d74f4f5e368a81a24c9"
     }
   }
 }

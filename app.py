@@ -146,6 +146,11 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         confident = top.get("_face_sim") is not None and top["_face_sim"] >= MIN_FACE_SIM
 
         fp = fingerprint_post(top, image_path=face["crop_path"])
+        from src.utils import download_image
+        post_image = download_image(top.get("thumbnail") or "", OUTPUTS / "_post_image.jpg") \
+            or (download_image(top.get("image"), OUTPUTS / "_post_image.jpg") if top.get("image") else None)
+        if post_image:
+            fp = fingerprint_post(top, image_path=post_image)
         fingerprint = fp["fingerprint_sha256"]
         payload = {
             "post": top,

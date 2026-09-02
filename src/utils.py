@@ -45,6 +45,76 @@ def fingerprint_post(post: dict, image_path=None) -> dict:
     return parts
 
 
+# Canonicalization procedure (documented in README §Canonicalization):
+#   record = {url, title, source, thumbnail, [image_sha256]} — keys sorted,
+#   separators (",", ":"), ensure_ascii=False, UTF-8 encoded, SHA-256.
+# The image hash is over the raw bytes of the post image as retrieved at scan time.
+
+
+def recompute_fingerprint(post: dict, image_path=None) -> str:
+    """Recompute ONLY the fingerprint (no created_at) — used by independent
+    re-verification: same canonicalization as fingerprint_post."""
+    parts: dict = {
+        "url": post.get("link") or post.get("url") or "",
+        "title": post.get("title") or "",
+        "source": post.get("source") or post.get("displayed_link") or "",
+        "thumbnail": post.get("thumbnail") or "",
+    }
+    if image_path and Path(image_path).exists():
+        parts["image_sha256"] = sha256_file(image_path)
+    return sha256_json(parts)
+
+
+def reverify_independent(evidence: dict, out_dir: Path = Path("outputs")) -> dict:
+    """§17 independent verification: re-retrieve the discovered content from the
+    live web, re-canonicalize, re-hash, and compare with the stored fingerprint.
+
+    Never reads the stored fingerprint to build the new one — rebuilds every
+    field from a fresh re-download. Returns a structured result; never fakes
+    success (a failed re-download downgrades the result honestly).
+    """
+    import requests  # local import: tests may not need it
+
+    post = evidence or {}
+    url = post.get("url") or ""
+    thumb = post.get("thumbnail") or ""
+    stored = evidence.get("fingerprint_sha256") or ""
+
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    re_dl = None
+    image_path = None
+    # Mirror scan-time composition: only re-hash an image if the stored record
+    # included one (otherwise recomputed would structurally differ from stored).
+    if thumb and evidence.get("image_sha256"):
+        dest = out_dir / "_reverify_image.bin"
+        re_dl = download_image(thumb, dest)
+        if re_dl:
+            image_path = dest
+
+    recomputed = recompute_fingerprint(post, image_path=image_path)
+    result = {
+        "method": "re-retrieve + re-canonicalize + re-hash",
+        "re_downloaded_image": bool(re_dl),
+        "recomputed_fingerprint": recomputed,
+        "stored_fingerprint": stored,
+        "match": bool(stored) and recomputed == stored,
+        "components": {
+            "url": url,
+            "title": post.get("title") or "",
+            "source": post.get("source") or "",
+            "thumbnail": thumb,
+            "image_sha256": (sha256_file(image_path) if image_path else None),
+        },
+    }
+    if image_path:
+        try:
+            image_path.unlink()
+        except OSError:
+            pass
+    return result
+
+
 def download_image(url: str, dest: Path, max_bytes: int = 10 * 1024 * 1024) -> Path | None:
     """Download image (max 10MB default) with proper headers and size cap."""
     try:

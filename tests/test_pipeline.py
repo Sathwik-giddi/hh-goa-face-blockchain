@@ -142,3 +142,59 @@ def test_safe_filename():
     assert safe_filename("") == "img"
     assert safe_filename("   ") != ""  # not empty
     assert "/" not in safe_filename("   ")
+
+
+def test_canonicalization_deterministic():
+    """§15: same canonical record → same SHA-256; any value change → different hash."""
+    from src.utils import fingerprint_post, recompute_fingerprint, sha256_json
+    post = {"link": "https://example.com/post", "title": "t", "source": "s", "thumbnail": "th"}
+    f1 = fingerprint_post(post)
+    f2 = fingerprint_post(dict(reversed(list(post.items()))))  # key order must not matter
+    assert f1["fingerprint_sha256"] == f2["fingerprint_sha256"]
+    # stable key ordering + separators are load-bearing: hand-recompute must match
+    parts = {"url": "https://example.com/post", "title": "t", "source": "s", "thumbnail": "th"}
+    assert recompute_fingerprint(post) == sha256_json(parts)
+    # tamper: one value changed → hash changes
+    tampered = dict(parts, title="t2")
+    assert sha256_json(tampered) != sha256_json(parts)
+
+
+def test_multi_face_deterministic_selection():
+    """§11: multi-face images must expose deterministic per-face options, not random pick."""
+    face = detect_and_encode_safe("data/samples/3q.jpg")
+    assert face["num_faces"] >= 1
+    opts = face.get("face_options") or []
+    assert len(opts) >= 1
+    assert opts[0]["index"] == 0
+    # explicit selection must switch the encoded face deterministically
+    if len(opts) > 1:
+        f0 = detect_and_encode_safe("data/samples/3q.jpg")
+        f1 = detect_and_encode("data/samples/3q.jpg", out_dir=TEST_OUT, face_index=1)
+        assert f1["selected_index"] == 1
+        assert f1["bbox"] == f1["all_faces"][1]["bbox"]
+        assert f0["bbox"] == f0["all_faces"][0]["bbox"]
+
+
+def test_reverify_independent_match_and_tamper():
+    """§17/§18: re-hash from re-retrieved content; tampered record must mismatch."""
+    from src.utils import fingerprint_post, reverify_independent
+    post = {"link": "https://example.com/post", "title": "t", "source": "s",
+            "thumbnail": "https://example.com/img.jpg"}
+    fp = fingerprint_post(post)  # no image download in test env → metadata-only hash
+    rv = reverify_independent(fp, out_dir=TEST_OUT)
+    assert rv["match"] is True
+    assert rv["recomputed_fingerprint"] == fp["fingerprint_sha256"]
+    # tamper one value → re-hash no longer matches the stored fingerprint
+    tampered = dict(fp, title="t2")
+    rv2 = reverify_independent(tampered, out_dir=TEST_OUT)
+    assert rv2["match"] is False
+
+
+def test_invalid_image_fails_cleanly():
+    """§26: corrupt input → meaningful error, no fake success."""
+    p = Path("/tmp/corrupt.jpg")
+    p.write_bytes(b"not an image at all")
+    r = detect_and_encode_safe(p)
+    assert r["crop_path"] is None
+    assert r["num_faces"] == 0
+    assert "cannot decode" in (r.get("warning") or "")

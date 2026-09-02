@@ -160,7 +160,9 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
                 "name": "anchor", "outputs": [], "stateMutability": "nonpayable", "type": "function",
             }]
             c = w3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=abi)
-            data_hex = c.encode_abi("anchor", [bytes.fromhex(fingerprint), ""])
+            # §8: store the source reference on-chain (off-chain evidence pointer)
+            cid = (payload or {}).get("post", {}).get("link", "") or ""
+            data_hex = c.encode_abi("anchor", [bytes.fromhex(fingerprint), cid])
         else:
             data_hex = "0x" + fingerprint
         # Use current base_fee * 2 + priority for safety on Amoy
@@ -173,7 +175,7 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
         tx = {
             "to": contract_address and Web3.to_checksum_address(contract_address) or acct.address,
             "value": 0, "data": data_hex, "nonce": nonce,
-            "gas": 120000 if contract_address else 50000, "chainId": chain_id,
+            "gas": 400000 if contract_address else 50000, "chainId": chain_id,
             "maxFeePerGas": max_fee,
             "maxPriorityFeePerGas": max_priority,
         }

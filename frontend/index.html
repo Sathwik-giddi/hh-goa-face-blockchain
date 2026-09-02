@@ -92,7 +92,7 @@ tailwind.config={theme:{extend:{
     <div class="min-w-0">
 
       <!-- intake -->
-      <section id="intake">
+      <section id="intake" class="max-w-[640px]">
         <h1 class="font-display font-bold tracking-tight text-[30px] md:text-[38px] leading-[1.05]">
           Find a face on the open web.<br/>Seal the proof on-chain.
         </h1>
@@ -112,14 +112,18 @@ tailwind.config={theme:{extend:{
             </div>
           </label>
 
-          <div id="previewWrap" class="hidden mt-5 grid grid-cols-2 gap-4">
+          <div id="previewWrap" class="hidden mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <figure class="border border-line bg-white">
-              <div class="brackets relative"><b class="b"></b><img id="preview" alt="uploaded scan" class="w-full h-[150px] object-cover"/></div>
-              <figcaption class="text-[11px] font-mono text-slate px-2.5 py-2 border-t border-line">INPUT · source</figcaption>
+              <div class="relative h-[180px] bg-[#EDF1F4] flex items-center justify-center overflow-hidden">
+                <img id="preview" alt="uploaded scan" class="max-w-full max-h-full object-contain"/>
+              </div>
+              <figcaption class="text-[11px] font-mono text-slate px-2.5 py-2 border-t border-line flex justify-between"><span>INPUT</span><span>source</span></figcaption>
             </figure>
             <figure id="cropWrap" class="hidden border border-line bg-white">
-              <div class="brackets relative"><b class="b"></b><img id="crop" alt="detected face" class="w-full h-[150px] object-cover"/></div>
-              <figcaption class="text-[11px] font-mono text-slate px-2.5 py-2 border-t border-line">CAPTURE · detected face</figcaption>
+              <div class="brackets relative h-[180px] bg-[#EDF1F4] flex items-center justify-center overflow-hidden"><b class="b"></b>
+                <img id="crop" alt="detected face" class="max-w-full max-h-full object-contain"/>
+              </div>
+              <figcaption class="text-[11px] font-mono text-slate px-2.5 py-2 border-t border-line flex justify-between"><span>CAPTURE</span><span>detected face</span></figcaption>
             </figure>
           </div>
 
@@ -158,8 +162,10 @@ tailwind.config={theme:{extend:{
             <span class="ml-auto text-[11px] font-mono text-slate" id="s1Meta">—</span>
           </header>
           <div class="grid md:grid-cols-[200px_minmax(0,1fr)] gap-5 items-start">
-            <figure class="brackets border border-line bg-white relative"><b class="b"></b>
-              <img id="crop2" alt="detected face" class="w-full h-[200px] object-cover"/>
+            <figure class="border border-line bg-white">
+              <div class="brackets relative h-[200px] bg-[#EDF1F4] flex items-center justify-center overflow-hidden"><b class="b"></b>
+                <img id="crop2" alt="detected face" class="max-w-full max-h-full object-contain"/>
+              </div>
             </figure>
             <dl class="text-[13px] leading-6" id="faceFacts"></dl>
           </div>
@@ -336,7 +342,7 @@ function showPreview(file){
   cropWrap.classList.add('hidden');
   facePick.classList.add('hidden');
   previewWrap.classList.remove('hidden');
-  previewWrap.classList.remove('grid-cols-2'); previewWrap.classList.add('grid-cols-1');
+  previewWrap.classList.remove('sm:grid-cols-2');  // source alone → full row
 }
 drop.addEventListener('dragover',e=>{ e.preventDefault(); drop.classList.add('border-ink/50'); });
 drop.addEventListener('dragleave',()=>drop.classList.remove('border-ink/50'));
@@ -410,6 +416,11 @@ function render(j){
 
   // 01 face
   $('#s1Meta').textContent=(f.engine||'')+' · conf '+(Number(f.conf)||0).toFixed(2);
+  if(f.crop_path){
+    crop.onload=()=>{ cropWrap.classList.remove('hidden'); previewWrap.classList.add('sm:grid-cols-2'); };
+    crop.onerror=()=>cropWrap.classList.add('hidden');
+    crop.src='/'+f.crop_path+'?t='+Date.now();
+  }
   const c2=$('#crop2');
   c2.onload=()=>c2.parentElement.classList.add('brackets');
   c2.src='/'+f.crop_path+'?t='+Date.now();

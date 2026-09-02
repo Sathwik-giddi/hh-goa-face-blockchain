@@ -116,7 +116,7 @@ def _fetch_hits(image_path: Path, api_key: str) -> tuple:
     return out, raws
 
 
-def _score_thumbnail_face(url: str, query_feat) -> tuple:
+def _score_image_face(url: str, query_feat) -> tuple:
     """Download image, embed its largest face with SFace, return (similarity 0-100 or None, error).
 
     Real face recognition: matches the person, not the picture. Falls back to
@@ -126,13 +126,13 @@ def _score_thumbnail_face(url: str, query_feat) -> tuple:
         return None, "no url or query"
     try:
         r = requests.get(
-            url, timeout=4,
+            url, timeout=6,
             headers={"User-Agent": "Mozilla/5.0", "Accept": "image/*,*/*;q=0.5"},
         )
         if r.status_code >= 400:
             return None, f"HTTP {r.status_code}"
         arr = np.frombuffer(r.content, dtype=np.uint8)
-        if arr.size == 0 or arr.size > 5 * 1024 * 1024:
+        if arr.size == 0 or arr.size > 8 * 1024 * 1024:
             return None, "empty or too large"
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None or img.size == 0:
@@ -143,6 +143,17 @@ def _score_thumbnail_face(url: str, query_feat) -> tuple:
         return embedding_similarity(query_feat, feat), None
     except Exception as e:
         return None, str(e)[:40]
+
+
+def _score_thumbnail_face(url: str, image_url: str, query_feat) -> tuple:
+    """Score a candidate by its face, preferring the full-size image over the
+    thumbnail (higher resolution → far more reliable embeddings).
+    """
+    if image_url and image_url != url:
+        s, err = _score_image_face(image_url, query_feat)
+        if s is not None:
+            return s, None
+    return _score_image_face(url, query_feat)
 
 
 def reverse_image_search(
@@ -194,7 +205,7 @@ def reverse_image_search(
     from concurrent.futures import ThreadPoolExecutor
     sims = [None] * len(hits)
     with ThreadPoolExecutor(max_workers=8) as ex:
-        futures = {ex.submit(_score_thumbnail_face, h.get("thumbnail") or "", query_feat): i for i, h in enumerate(hits)}
+        futures = {ex.submit(_score_thumbnail_face, h.get("thumbnail") or "", h.get("image") or "", query_feat): i for i, h in enumerate(hits)}
         for fut, i in futures.items():
             try:
                 s, _err = fut.result(timeout=15)

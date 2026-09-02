@@ -151,7 +151,7 @@ async function healthCheck(){
     if(!r.ok) return;
     const j=await r.json();
     if(j.ok){
-      health.textContent='live · height '+j.chain_height+' · '+j.mode;
+      health.textContent='live · height '+j.chain_height+' · '+j.mode+' · backend '+(j.version||'?');
       heightEl.textContent=j.chain_height;
       loadChain();
     } else {

@@ -21,7 +21,7 @@ from src.utils import fingerprint_post, is_hex64, safe_filename
 from src.blockchain import anchor, verify
 from src.blockchain_local import _load_chain
 
-app = FastAPI(title="HH Goa — Face→Social→Chain", version="3.0-live")
+app = FastAPI(title="HH Goa — Face→Social→Chain", version="4.1-sface")
 
 # CORS: lock to local dev origins (override via ALLOWED_ORIGINS env if needed)
 allowed = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:3000,http://localhost:3000")
@@ -57,6 +57,7 @@ def health():
         return {"ok": False, "error": f"chain load failed: {e}"}
     return {
         "ok": True,
+        "version": app.version,
         "chain_height": height,
         "mode": os.getenv("BLOCKCHAIN_MODE", "local"),
         "live": bool(os.getenv("SERPAPI_API_KEY")),

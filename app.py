@@ -86,7 +86,11 @@ def verify_api(hash: str = Query("")):
 @app.post("/api/scan")
 async def scan(file: UploadFile = File(...), face_index: int | None = Query(None)):
     ct = (file.content_type or "").lower()
-    if not (ct.startswith("image/") or ct in ALLOWED_IMG):
+    ext = (Path(file.filename or "").suffix or "").lower()
+    # Some clients send application/octet-stream for real images; the decode
+    # step validates the actual bytes, so the gate can be permissive here.
+    if not (ct.startswith("image/") or ct in ALLOWED_IMG
+            or ext in {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif"}):
         raise HTTPException(400, "Upload an image (jpg/png/webp/heic)")
 
     safe = safe_filename(file.filename or "img")

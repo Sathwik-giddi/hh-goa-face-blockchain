@@ -1346,5 +1346,51 @@
       "face_similar_count": 97
     },
     "hash": "0c3a6834c85279207ebd1d9d5d1ab7d71c916c6ecb4f8567184d00b1a1491837"
+  },
+  {
+    "index": 32,
+    "timestamp": "2026-09-02T19:34:49.388241+00:00",
+    "prev_hash": "0c3a6834c85279207ebd1d9d5d1ab7d71c916c6ecb4f8567184d00b1a1491837",
+    "data_hash": "53392c03929f066297a3f1a591f11a32305aabfb644142d55f3a944d15fc5094",
+    "data": {
+      "fingerprint": "fed26d3fc6dc22d8326ff9fdf200d1602ca70e63750fd92448e7e6242764117e",
+      "mode": "evm",
+      "txHash": "0x1565064414b721a2cc4239959b78e184433fb4a33d00e650417da2de47e64adc",
+      "blockNumber": 46559248,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x1565064414b721a2cc4239959b78e184433fb4a33d00e650417da2de47e64adc",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 51,
+        "title": "Image-Scaling Attacks and Defenses",
+        "link": "https://scaling-attacks.net/",
+        "source": "scaling-attacks.net",
+        "source_icon": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcQ8g4FrYNbx-6S2Tx7mDUpBqvwf111HKxiHzV5RxAl-vdoeqsh15u0xBv-5bOXF_XFe7OnKqa03VUI9E7clCu_OJMUOfSkuj-t7JVEfqQKEJFomqXZHlapF",
+        "thumbnail": "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTOU3n6CTk_2Aiynti_YfArrGjUuVT1wldmSjMtSKFRg3himPCM",
+        "thumbnail_width": 194,
+        "thumbnail_height": 259,
+        "image": "https://scaling-attacks.net/images/example1/result_attack_image_small.jpg",
+        "image_width": 300,
+        "image_height": 400,
+        "_face_sim": 96.1,
+        "_link_valid": true,
+        "_link_note": "source page reachable",
+        "_link_final": "https://scaling-attacks.net/"
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.9096575379371643,
+        "bbox": [
+          206,
+          185,
+          147,
+          204
+        ],
+        "embedding_hash": "ff0f3e2c3c3c181e"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 43
+    },
+    "hash": "6fb427163f5a0593659ee9f90142f50fc2204afc7ca8a72b1f7742b0f2da642b"
   }
 ]

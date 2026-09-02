@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Face → Social → Blockchain — Verifier</title>
+<title>Face → Social → Blockchain</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -17,125 +17,94 @@ tailwind.config={theme:{extend:{
   body{background:#F8FAFC;color:#0F172A}
   .tick{font-variant-numeric:tabular-nums}
   ::selection{background:#BFDBFE}
-  .spinner{width:14px;height:14px;border:2px solid #CBD5E1;border-top-color:#2563EB;border-radius:9999px;animation:spin .7s linear infinite;display:inline-block;vertical-align:-2px;margin-right:6px}
-  @keyframes spin{to{transform:rotate(360deg)}}
   .fade-in{animation:fade .3s ease-out}
   @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body class="font-body antialiased min-h-screen flex flex-col">
 
-<!-- header -->
 <header class="border-b border-line bg-white/90 backdrop-blur sticky top-0 z-40">
-  <div class="max-w-[1200px] mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white text-sm font-semibold">◈</div>
-      <div>
-        <div class="text-sm font-semibold leading-tight">Face → Social → Blockchain</div>
-        <div class="text-[11px] text-muted leading-tight">Identity verification pipeline · HH Goa 2026</div>
-      </div>
+  <div class="max-w-[1080px] mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-white text-xs font-semibold">◈</div>
+      <div class="text-sm font-semibold">Face → Social → Blockchain</div>
     </div>
     <div class="flex items-center gap-2">
       <span class="hidden sm:flex items-center gap-1.5 text-xs text-muted mr-1"><span class="w-2 h-2 rounded-full bg-ok"></span><span id="health">—</span></span>
-      <a href="https://github.com/Sathwik-giddi/hh-goa-face-blockchain" target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-1.5 rounded-lg border border-line hover:bg-slate-50 transition">GitHub</a>
-      <a href="https://amoy.polygonscan.com" target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-blue-700 transition">Polygonscan</a>
+      <a href="https://amoy.polygonscan.com" target="_blank" rel="noopener noreferrer" class="text-xs px-3 py-1.5 rounded-lg border border-line hover:bg-slate-50 transition">Polygonscan</a>
     </div>
   </div>
 </header>
 
-<!-- hero + intake -->
-<main class="max-w-[1200px] mx-auto px-4 md:px-6 w-full pt-8 pb-10">
-  <div class="grid md:grid-cols-[1fr_400px] gap-6">
-    <div class="pt-2">
-      <h1 class="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-        Verify a face, find its public posts,<br class="hidden md:block"/>
-        <span class="text-accent">anchor the proof on-chain.</span>
-      </h1>
-      <p class="mt-3 text-[15px] leading-7 text-muted max-w-[540px]">
-        Upload a face scan. The pipeline detects and encodes the face, runs a live
-        Google&nbsp;Lens reverse-image search across Reddit, X, Instagram and TikTok,
-        fingerprints the best match, and records it on the Polygon Amoy blockchain —
-        then re-verifies it against the on-chain record.
-      </p>
-      <div class="mt-4 flex flex-wrap gap-2 text-xs">
-        <span class="px-2.5 py-1 rounded-full bg-accentSoft text-accent border border-blue-100">Live search — no mock data</span>
-        <span class="px-2.5 py-1 rounded-full bg-accentSoft text-accent border border-blue-100">Smart-contract anchoring</span>
-        <span class="px-2.5 py-1 rounded-full bg-accentSoft text-accent border border-blue-100">Tamper-evident verification</span>
-      </div>
-      <div class="mt-6 rounded-xl border border-line bg-card shadow-card p-4 max-w-[540px]">
-        <div class="text-[11px] font-semibold tracking-wide text-muted uppercase mb-1">Last anchored fingerprint</div>
-        <div class="font-mono text-[12px] break-all tick" id="ticker">—</div>
-        <div class="text-xs text-muted mt-1">tx <a id="tickerLink" href="#" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">—</a> · <span id="tickerMeta">awaiting first scan</span></div>
-      </div>
-    </div>
+<main class="max-w-[1080px] mx-auto px-4 md:px-6 w-full flex-1">
+  <!-- stage 1: upload -->
+  <section id="intake" class="max-w-[560px] mx-auto text-center pt-14 pb-10">
+    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Find a face on the web.<br/>Prove it on-chain.</h1>
+    <p class="mt-2 text-sm text-muted">Live reverse-image search, fingerprinted and anchored on Polygon Amoy.</p>
 
-    <div class="bg-card rounded-2xl border border-line shadow-card p-5 h-fit">
-      <div class="text-sm font-semibold mb-3">Upload a face scan</div>
+    <div class="mt-6 bg-card rounded-2xl border border-line shadow-card p-5 text-left">
       <label id="drop" class="group block rounded-xl border-2 border-dashed border-line hover:border-accent/50 hover:bg-accentSoft/40 p-6 text-center cursor-pointer transition">
         <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/avif" class="hidden"/>
-        <div class="w-11 h-11 mx-auto rounded-full bg-accentSoft flex items-center justify-center mb-3 text-accent text-lg group-hover:scale-105 transition">⬆</div>
-        <div class="font-medium text-sm">Drop an image here or click to browse</div>
-        <div class="text-xs text-muted mt-1">JPG · PNG · WEBP — a visible face works best</div>
-        <div class="mt-3 inline-flex text-xs px-4 py-2 rounded-lg bg-accent text-white font-medium">Choose file</div>
+        <div class="w-10 h-10 mx-auto rounded-full bg-accentSoft flex items-center justify-center mb-2 text-accent group-hover:scale-105 transition">⬆</div>
+        <div class="font-medium text-sm">Drop an image or click to browse</div>
+        <div class="text-xs text-muted mt-0.5">JPG · PNG · WEBP — a visible face works best</div>
       </label>
       <div id="previewWrap" class="hidden mt-4 grid grid-cols-2 gap-3">
-        <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="preview" alt="upload preview" class="w-full h-[150px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Source</div></div>
-        <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="crop" alt="face crop" class="w-full h-[150px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Detected face</div></div>
+        <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="preview" alt="upload preview" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Source</div></div>
+        <div class="rounded-lg overflow-hidden border border-line bg-slate-50"><img id="crop" alt="face crop" class="w-full h-[140px] object-cover"/><div class="text-[11px] px-2 py-1.5 text-muted border-t border-line bg-white">Detected face</div></div>
       </div>
       <button id="scanBtn" class="mt-4 w-full h-11 rounded-lg bg-accent text-white font-semibold hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed">Run pipeline</button>
       <div id="status" class="mt-2 text-xs font-mono text-muted min-h-[1.25em]"></div>
     </div>
-  </div>
 
-  <!-- results -->
-  <div class="mt-8 grid lg:grid-cols-3 gap-4">
-    <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-      <div class="flex items-center gap-2 mb-3"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">1</span><span class="text-sm font-semibold">Face detection</span></div>
-      <div id="faceBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[120px] text-sm text-muted">Waiting for a scan. Uses OpenCV YuNet — handles 3-quarter views, glasses and side profiles — with a 64-bit pHash encoding.</div>
-      <div class="text-[11px] font-mono text-muted mt-2" id="faceMeta"></div>
-    </section>
-
-    <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">2</span><span class="text-sm font-semibold">Social match</span></div>
-        <span id="redditBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 hidden">Reddit found</span>
+    <details id="verifyDetails" class="mt-4 text-left bg-card rounded-xl border border-line shadow-card px-4 py-3">
+      <summary class="text-sm font-medium cursor-pointer select-none text-slate-700">Verify an existing fingerprint</summary>
+      <div class="flex gap-2 mt-3">
+        <input id="verifyInput" placeholder="64-hex SHA-256" maxlength="64" pattern="[0-9a-fA-F]{64}" class="flex-1 h-10 rounded-lg border border-line bg-slate-50 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"/>
+        <button id="verifyBtn" class="h-10 px-4 rounded-lg bg-ink text-white font-medium text-sm hover:bg-slate-700 transition">Verify</button>
       </div>
-      <div id="socialBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[120px] text-sm text-muted">Live Google Lens search with face-similarity re-ranking of every thumbnail. Private images correctly return no matches.</div>
-      <div id="hits" class="mt-3 space-y-2"></div>
-    </section>
+      <div id="verifyOut" class="mt-2 text-sm font-mono min-h-[1.25em]"></div>
+    </details>
+  </section>
+
+  <!-- stage 2: results (hidden until first scan) -->
+  <section id="results" class="hidden pb-10 space-y-4">
+    <div class="grid lg:grid-cols-3 gap-4">
+      <section class="bg-card rounded-2xl border border-line shadow-card p-5">
+        <div class="flex items-center gap-2 mb-3"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">1</span><span class="text-sm font-semibold">Face detection</span></div>
+        <div id="faceBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[110px] text-sm text-muted"></div>
+        <div class="text-[11px] font-mono text-muted mt-2" id="faceMeta"></div>
+      </section>
+
+      <section class="bg-card rounded-2xl border border-line shadow-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">2</span><span class="text-sm font-semibold">Social match</span></div>
+          <span id="redditBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 hidden">Reddit</span>
+        </div>
+        <div id="socialBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[110px] text-sm text-muted"></div>
+        <div id="hits" class="mt-3 space-y-2"></div>
+      </section>
+
+      <section class="bg-card rounded-2xl border border-line shadow-card p-5">
+        <div class="flex items-center gap-2 mb-3"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">3</span><span class="text-sm font-semibold">Blockchain proof</span></div>
+        <div id="chainBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[110px] text-sm text-muted"></div>
+        <div id="receipt" class="mt-3"></div>
+      </section>
+    </div>
 
     <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-      <div class="flex items-center gap-2 mb-3"><span class="w-5 h-5 rounded-md bg-accentSoft text-accent text-[11px] font-semibold flex items-center justify-center">3</span><span class="text-sm font-semibold">Blockchain proof</span></div>
-      <div id="chainBox" class="rounded-lg border border-line bg-slate-50 p-3 min-h-[120px] text-sm text-muted">Fingerprints are anchored via the FaceAnchor contract on Polygon Amoy and mirrored to a local hash-chain with three-layer integrity (prev_hash · block hash · data hash).</div>
-      <div id="receipt" class="mt-3"></div>
-    </section>
-  </div>
-
-  <!-- verify + chain -->
-  <div class="mt-4 grid md:grid-cols-2 gap-4">
-    <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-      <div class="text-sm font-semibold mb-3">Verify a fingerprint</div>
-      <div class="flex gap-2">
-        <input id="verifyInput" placeholder="Paste 64-hex SHA-256 fingerprint" maxlength="64" pattern="[0-9a-fA-F]{64}" class="flex-1 h-10 rounded-lg border border-line bg-slate-50 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"/>
-        <button id="verifyBtn" class="h-10 px-4 rounded-lg bg-accent text-white font-medium text-sm hover:bg-blue-700 transition">Verify</button>
-      </div>
-      <div id="verifyOut" class="mt-2 text-sm font-mono min-h-[1.5em]"></div>
-      <div class="text-xs text-muted mt-2">Tip: flip the last character of the fingerprint — verification should correctly fail.</div>
-    </section>
-
-    <section class="bg-card rounded-2xl border border-line shadow-card p-5">
-      <div class="flex items-baseline justify-between mb-3">
-        <div class="text-sm font-semibold">Local chain</div>
+      <div class="flex items-baseline justify-between mb-2">
+        <div class="text-sm font-semibold">Chain history</div>
         <div class="text-xs text-muted">height <span class="font-semibold text-ink tick" id="height">—</span></div>
       </div>
-      <div id="chainList" class="space-y-1 font-mono text-xs max-h-[150px] overflow-y-auto"></div>
+      <div id="chainList" class="space-y-1 font-mono text-xs max-h-[140px] overflow-y-auto"></div>
     </section>
-  </div>
+  </section>
 </main>
 
-<footer class="border-t border-line bg-white mt-auto">
-  <div class="max-w-[1200px] mx-auto px-4 md:px-6 py-4 text-center text-xs text-muted">
-    Built for HH Goa 2026 · Task 3 — live reverse-image search + Polygon Amoy contract anchoring · runs locally for $0
+<footer class="border-t border-line bg-white">
+  <div class="max-w-[1080px] mx-auto px-4 md:px-6 py-3 text-center text-xs text-muted">
+    HH Goa 2026 · Task 3 — runs locally for $0
   </div>
 </footer>
 
@@ -144,13 +113,11 @@ tailwind.config={theme:{extend:{
 const $=s=>document.querySelector(s);
 const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), previewWrap=$('#previewWrap'), crop=$('#crop'), scanBtn=$('#scanBtn'), status=$('#status');
 const faceBox=$('#faceBox'), faceMeta=$('#faceMeta'), socialBox=$('#socialBox'), hits=$('#hits'), redditBadge=$('#redditBadge'), chainBox=$('#chainBox'), receiptEl=$('#receipt');
-const verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'), heightEl=$('#height'), chainList=$('#chainList'), health=$('#health'), ticker=$('#ticker'), tickerLink=$('#tickerLink'), tickerMeta=$('#tickerMeta');
+const verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'), heightEl=$('#height'), chainList=$('#chainList'), health=$('#health');
 
-let lastFP='';
 let previewUrl = null;
 const HEX64 = /^[0-9a-fA-F]{64}$/;
 
-// --- safe DOM helpers (no innerHTML for untrusted data) ---
 function el(tag, attrs={}, children=[]){
   const e=document.createElement(tag);
   for(const k in attrs){
@@ -171,7 +138,6 @@ function safeUrl(u){
 }
 function setText(node, text){ node.textContent = text==null ? '' : String(text); }
 
-// --- API helpers ---
 async function getJSON(url){
   const r = await fetch(url, {headers:{'Accept':'application/json'}});
   let j=null; try{ j=await r.json(); }catch(_){}
@@ -179,18 +145,17 @@ async function getJSON(url){
   return j;
 }
 
-// --- health / chain polling ---
 async function healthCheck(){
   try{
     const r=await fetch('/api/health',{headers:{'Accept':'application/json'}});
     if(!r.ok) return;
     const j=await r.json();
     if(j.ok){
-      health.textContent='live · chain height '+j.chain_height+' · '+j.mode;
+      health.textContent='live · height '+j.chain_height+' · '+j.mode;
       heightEl.textContent=j.chain_height;
       loadChain();
     } else {
-      health.textContent='chain error: '+(j.error||'?');
+      health.textContent='chain error';
     }
   }catch(e){ health.textContent='offline'; }
 }
@@ -210,13 +175,11 @@ async function loadChain(){
 }
 healthCheck();
 
-// --- file input / drop ---
 function showPreview(file){
   if(previewUrl){ URL.revokeObjectURL(previewUrl); previewUrl=null; }
   previewUrl = URL.createObjectURL(file);
   preview.src = previewUrl;
   previewWrap.classList.remove('hidden');
-  setText(faceBox, 'Ready — click “Run pipeline”.');
 }
 drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('border-accent/50','bg-accentSoft/40'); });
 drop.addEventListener('dragleave', ()=>drop.classList.remove('border-accent/50','bg-accentSoft/40'));
@@ -229,16 +192,24 @@ drop.addEventListener('drop', e=>{
 });
 fileInput.addEventListener('change', ()=>{ if(fileInput.files[0]) showPreview(fileInput.files[0]); });
 
-// --- scan ---
+function revealResults(){
+  $('#results').classList.remove('hidden');
+  $('#intake').classList.add('max-w-[560px]');
+  $('#intake').classList.add('md:max-w-none');
+  // shrink hero: hide tagline once results exist
+  const tagline = document.querySelector('#intake p');
+  if(tagline) tagline.classList.add('hidden');
+}
+
 scanBtn.addEventListener('click', async()=>{
   if(!fileInput.files[0]){ setText(status, 'Pick an image first'); status.className='mt-2 text-xs font-mono text-bad'; return; }
   scanBtn.disabled = true;
-  setText(status, '[1/4] Detecting face… (YuNet)');
+  setText(status, '[1/4] Detecting face…');
   status.className='mt-2 text-xs font-mono text-accent';
   const fdata = new FormData();
   fdata.append('file', fileInput.files[0]);
-  const t1=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[2/4] Searching the open web via Google Lens… (8–15s)'); }}, 2500);
-  const t2=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[3/4] Anchoring fingerprint on Polygon Amoy…'); }}, 12000);
+  const t1=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[2/4] Searching the web via Google Lens… (8–15s)'); }}, 2500);
+  const t2=setTimeout(()=>{ if(scanBtn.disabled){ setText(status, '[3/4] Anchoring on Polygon Amoy…'); }}, 12000);
   let resp, j;
   try{
     resp = await fetch('/api/scan', {method:'POST', body:fdata});
@@ -253,47 +224,49 @@ scanBtn.addEventListener('click', async()=>{
   clearTimeout(t1); clearTimeout(t2);
   if(!resp.ok){
     const msg = (j && (j.detail || j.error)) || resp.statusText || ('HTTP '+resp.status);
-    setText(status, '✗ HTTP '+resp.status+' — '+msg);
+    setText(status, '✗ '+msg);
     status.className='mt-2 text-xs font-mono text-bad';
     scanBtn.disabled=false;
     return;
   }
+  revealResults();
+
   // face
   const f = j.face;
   faceBox.innerHTML='';
-  faceBox.appendChild(el('div',{class:'fade-in'},[
-    el('div',{class:'text-ink font-medium', text:`${f.engine} · ${f.num_faces} face${f.num_faces===1?'':'s'} · conf ${Number(f.conf).toFixed(2)}`}),
-  ]));
+  faceBox.appendChild(el('div',{class:'fade-in text-ink font-medium', text:`${f.engine} · ${f.num_faces} face${f.num_faces===1?'':'s'} · conf ${Number(f.conf).toFixed(2)}`}));
   if(f.bbox){
-    faceBox.appendChild(el('div',{class:'text-xs text-muted mt-1 font-mono', text:`bbox ${f.bbox.join(', ')} · pHash ${f.embedding_hash}`}));
+    faceBox.appendChild(el('div',{class:'text-xs text-muted mt-1 font-mono', text:`pHash ${f.embedding_hash}`}));
   }
   if(f.crop_path){
-    const cacheBust = '?t='+Date.now();
-    crop.src = '/'+f.crop_path+cacheBust;
+    crop.src = '/'+f.crop_path+'?t='+Date.now();
   }
   if(f.warning){
     faceBox.appendChild(el('div',{class:'text-xs text-warn mt-1', text:'⚠ '+f.warning}));
   }
-  faceMeta.textContent = 'crop: '+(f.crop_path||'—');
+  faceMeta.textContent = '';
 
   // social
   const s = j.search;
   redditBadge.classList.toggle('hidden', !s.reddit_found);
+  socialBox.innerHTML='';
+  hits.innerHTML='';
   if(!s.top){
-    socialBox.innerHTML='';
-    socialBox.appendChild(el('div',{class:'text-warn text-sm fade-in', text:'No matching public post found. Try a face that has been posted publicly (Reddit, X, Instagram, LinkedIn).'}));
-    hits.innerHTML='';
+    socialBox.appendChild(el('div',{class:'text-warn text-sm fade-in', text:'No matching public post found. Try a face posted publicly (Reddit, X, Instagram).'}));
   } else {
     const top = s.top;
     const faceDist = top._face_distance == null ? null : top._face_distance;
     const sim = faceDist != null ? Math.max(0, Math.round((1 - faceDist / 64) * 100)) : null;
-    socialBox.innerHTML='';
     const head = el('div',{class:'fade-in'});
     head.appendChild(el('div',{class:'text-ink font-medium'},[
       document.createTextNode('Best match — '),
       el('span',{class:'text-accent', text: top.source || '—'}),
     ]));
     head.appendChild(el('div',{class:'text-sm text-slate-600 mt-0.5', text:(top.title||'').slice(0,90)}));
+    if(top.link){
+      const safe = safeUrl(top.link);
+      if(safe) head.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline break-all block mt-1', text: 'open post ↗'}));
+    }
     if(sim != null){
       const tone = sim >= 85 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                  : sim >= 70 ? 'bg-amber-50 text-amber-700 border-amber-200'
@@ -301,20 +274,10 @@ scanBtn.addEventListener('click', async()=>{
       head.appendChild(el('span',{class:'inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full border ' + tone, text: sim + '% face similarity'}));
     }
     socialBox.appendChild(head);
-    if(top.link){
-      const safe = safeUrl(top.link);
-      if(safe){
-        socialBox.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline break-all block mt-1', text: top.link}));
-      } else {
-        socialBox.appendChild(el('div',{class:'text-xs text-muted break-all mt-1', text: top.link}));
-      }
-    }
-    socialBox.appendChild(el('div',{class:'text-xs text-muted mt-2', text: `${s.num_hits} hits · ${s.face_similar_count} face-similar · mode ${s.mode}`}));
-    // hits
-    hits.innerHTML='';
-    for(const h of (s.hits || []).slice(0, 8)){
+
+    for(const h of (s.hits || []).slice(0, 4)){
       const row=el('div',{class:'rounded-lg border border-line bg-white p-2 flex gap-2 fade-in'});
-      const img=el('img',{class:'w-12 h-12 object-cover rounded-md bg-slate-100', alt:''});
+      const img=el('img',{class:'w-10 h-10 object-cover rounded-md bg-slate-100', alt:''});
       if(h.thumbnail){
         const ts = safeUrl(h.thumbnail);
         if(ts) img.src = ts;
@@ -322,14 +285,10 @@ scanBtn.addEventListener('click', async()=>{
       img.addEventListener('error', ()=>{ img.style.opacity='0.3'; });
       row.appendChild(img);
       const meta=el('div',{class:'min-w-0 flex-1'});
-      meta.appendChild(el('div',{class:'text-xs font-medium truncate', text: (h.title||'').slice(0,64)}));
-      const d = h._face_distance==null ? '?' : Math.max(0, Math.round((1 - h._face_distance/64)*100)) + '%';
-      meta.appendChild(el('div',{class:'text-[11px] text-muted', text: (h.source||'?')+' · '+d}));
+      meta.appendChild(el('div',{class:'text-xs font-medium truncate', text: (h.title||'').slice(0,60)}));
       if(h.link){
         const ls = safeUrl(h.link);
-        if(ls){
-          meta.appendChild(el('a',{href:ls, target:'_blank', rel:'noopener noreferrer', class:'text-[11px] text-accent hover:underline', text:'open ↗'}));
-        }
+        if(ls) meta.appendChild(el('a',{href:ls, target:'_blank', rel:'noopener noreferrer', class:'text-[11px] text-accent hover:underline', text:'open ↗'}));
       }
       row.appendChild(meta);
       hits.appendChild(row);
@@ -338,58 +297,36 @@ scanBtn.addEventListener('click', async()=>{
 
   // chain
   const fp = j.fingerprint.fingerprint_sha256;
-  lastFP = fp;
-  verifyInput.value = fp;
-  ticker.textContent = fp;
   chainBox.innerHTML='';
   const cb = el('div',{class:'fade-in'});
   cb.appendChild(el('div',{class:'font-mono text-xs break-all text-ink', text: fp}));
-  cb.appendChild(el('div',{class:'text-xs text-muted mt-1', text:'SHA-256 of {url, title, source, thumbnail, image hash}'}));
   chainBox.appendChild(cb);
   const rc = j.receipt;
   receiptEl.innerHTML='';
   if(rc.txHash){
     const safe = safeUrl(rc.explorerUrl);
     const box=el('div',{class:'rounded-lg border border-emerald-200 bg-emerald-50 p-3 fade-in'});
-    box.appendChild(el('div',{class:'text-xs font-semibold text-ok', text:'Anchored on Polygon Amoy' + (rc.via === 'contract' ? ' · FaceAnchor contract' : '')}));
-    box.appendChild(el('div',{class:'font-mono text-[11px] break-all mt-1 text-slate-600', text: rc.txHash}));
-    if(safe){
-      box.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline', text: 'View transaction ↗'}));
-    }
-    if(rc.contractAddress){
-      const cUrl = safeUrl('https://amoy.polygonscan.com/address/'+rc.contractAddress);
-      if(cUrl) box.appendChild(el('a',{href:cUrl, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline block mt-0.5', text: 'View contract ↗'}));
-    }
-    box.appendChild(el('div',{class:'text-xs text-muted mt-1', text:`block ${rc.blockNumber||'?'} · on-chain data == fingerprint ✓`}));
+    box.appendChild(el('div',{class:'text-xs font-semibold text-ok', text:'Anchored on Polygon Amoy' + (rc.via === 'contract' ? ' · contract' : '')}));
+    box.appendChild(el('div',{class:'font-mono text-[11px] break-all text-slate-600 mt-1', text: 'block '+(rc.blockNumber||'?')}));
+    if(safe) box.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline', text: 'View transaction ↗'}));
     receiptEl.appendChild(box);
-    if(rc.explorerUrl){
-      tickerLink.href = rc.explorerUrl;
-      tickerLink.textContent = (rc.txHash||'').slice(0,10)+'…';
-      tickerMeta.textContent = 'block '+(rc.blockNumber||'?');
-    }
   } else if(rc.error){
     receiptEl.appendChild(el('div',{class:'rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-bad fade-in', text: '✗ Anchor failed: '+rc.error}));
   } else {
     const box=el('div',{class:'rounded-lg border border-line bg-white p-3 fade-in'});
-    box.appendChild(el('div',{class:'font-mono text-xs break-all text-ink', text: rc.block_hash || '—'}));
-    box.appendChild(el('div',{class:'text-xs text-muted mt-1', text: `local chain #${rc.block_index} · prev ${(rc.prev_hash||'').slice(0,10)}…`}));
-    if(rc.explorerUrl){
-      const safe = safeUrl(rc.explorerUrl);
-      if(safe){
-        box.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-accent hover:underline', text: rc.explorerUrl}));
-      }
-    }
+    box.appendChild(el('div',{class:'text-xs text-muted', text: `local chain block #${rc.block_index}`}));
     receiptEl.appendChild(box);
   }
+
   const vres = j.verify && j.verify.verified;
-  const vmsg = vres === true ? 'verified ✓' : (vres === false ? 'verified ✗' : (j.verify && (j.verify.note || j.verify.reason)) || 'see explorer');
+  const vmsg = vres === true ? 'verified ✓' : (vres === false ? 'verified ✗' : (j.verify && (j.verify.note || j.verify.reason)) || '');
   setText(status, '✓ Done — ' + vmsg);
   status.className='mt-2 text-xs font-mono text-ok';
+  verifyInput.value = fp;
   healthCheck();
   scanBtn.disabled = false;
 });
 
-// --- verify ---
 verifyBtn.addEventListener('click', async()=>{
   const h = verifyInput.value.trim();
   if(!HEX64.test(h)){
@@ -405,32 +342,21 @@ verifyBtn.addEventListener('click', async()=>{
     if(!r.ok){
       const msg = (j && (j.detail || j.error)) || r.statusText;
       verifyOut.innerHTML='';
-      verifyOut.appendChild(el('span',{class:'text-bad', text: '✗ HTTP '+r.status+' — '+msg}));
+      verifyOut.appendChild(el('span',{class:'text-bad', text: '✗ '+msg}));
       return;
     }
     const ok = j.verified;
     verifyOut.innerHTML='';
     if(ok === true){
-      const line=el('div');
-      line.appendChild(el('span',{class:'text-ok font-medium', text: '✓ Verified'}));
-      if(j.block_index != null){
-        line.appendChild(el('span',{class:'text-muted', text: ' · local block #'+j.block_index}));
-      }
-      verifyOut.appendChild(line);
-      const wrap = el('div',{class:'mt-1 space-y-0.5'});
+      verifyOut.appendChild(el('span',{class:'text-ok font-medium', text: '✓ Verified'}));
+      const wrap = el('div',{class:'mt-1'});
       for(const t of (j.txs || [])){
-        const label = t.via === 'contract'
-          ? 'contract state — anchored ✓'
-          : 'tx ' + (t.txHash||'').slice(0,10) + '… — calldata ✓';
-        const cls = t.verified === true ? 'text-ok hover:underline' : 'text-bad hover:underline';
+        const label = t.via === 'contract' ? 'contract state ✓' : 'tx ' + (t.txHash||'').slice(0,10) + '… ✓';
         if(t.explorerUrl){
           const safe = safeUrl(t.explorerUrl);
-          if(safe){
-            wrap.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs '+cls, text: label + ' ↗'}));
-            continue;
-          }
+          if(safe){ wrap.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-ok hover:underline block', text: label + ' ↗'})); continue; }
         }
-        wrap.appendChild(el('span',{class:'text-xs '+(t.verified === true ? 'text-ok' : 'text-bad'), text: label}));
+        wrap.appendChild(el('div',{class:'text-xs text-ok', text: label}));
       }
       verifyOut.appendChild(wrap);
     } else if(ok === false){

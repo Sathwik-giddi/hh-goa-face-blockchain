@@ -11,6 +11,9 @@ web3>=6.11,<7
 eth-account>=0.10
 py-solc-x>=2.0  # deploy-time only: compiles contracts/FaceAnchor.sol
 
+# Face recognition (ArcFace w600k_r50 via ONNX; auto-downloads on first run)
+onnxruntime>=1.17
+
 # Frontend (10/10 UI)
 fastapi>=0.110,<1
 uvicorn>=0.29

@@ -157,7 +157,7 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         top = search.get("top_match")
         if not top:
             raise HTTPException(404, "Live Lens returned 0 hits — no public indexed copy of this face. Try a publicly posted image (IG/X/Reddit).")
-        MIN_FACE_SIM = 36.3  # SFace same-person cosine threshold
+        MIN_FACE_SIM = 42.5  # ArcFace cosine same-person threshold (calibrated)
         confident = top.get("_face_sim") is not None and top["_face_sim"] >= MIN_FACE_SIM
 
         # §26: never convert "no match" into anchored look-alike evidence.

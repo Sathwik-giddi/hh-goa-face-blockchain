@@ -218,20 +218,28 @@ def detect_rows_yunet(img):
 
 
 def face_embedding(image, face_row=None):
-    """128-D SFace embedding for the largest face in `image`.
+    """Recognition embedding for the largest face in `image`.
 
-    image: file path or BGR ndarray. Returns (embedding, method) where
-    embedding is a float32 vector or None.
+    Primary: ArcFace (InsightFace w600k_r50, 512-D, L2-normalized) — a strong
+    discriminator. Fallback: SFace (128-D) when ArcFace/onnxruntime is absent.
+    Returns (embedding, method); embedding is None when no usable face exists.
     """
     img = ensure_image(image) if not isinstance(image, np.ndarray) else image
-    rec = _get_recognizer()
-    if rec is None:
-        return None, "sface_unavailable"
     img, rows = detect_rows_yunet(img)
     if not rows:
         return None, "no_face"
     rows.sort(key=lambda r: r[2] * r[3], reverse=True)
-    for row in rows[:2]:  # try largest, then second-largest
+    # ArcFace first — far fewer false positives than SFace. onnxruntime
+    # InferenceSession.run is thread-safe → no DNN lock, parallel scoring OK.
+    for row in rows[:2]:
+        feat = _arcface_embed(img, row)
+        if feat is not None:
+            return feat, "arcface"
+    # SFace fallback
+    rec = _get_recognizer()
+    if rec is None:
+        return None, "no_recognizer"
+    for row in rows[:2]:
         try:
             with _DNN_LOCK:
                 aligned = rec.alignCrop(img, row)
@@ -240,6 +248,78 @@ def face_embedding(image, face_row=None):
         except Exception as e:
             print(f"[face_id] SFace embed failed: {e}")
     return None, "embed_failed"
+
+
+# --- ArcFace recognizer (InsightFace buffalo_l / w600k_r50 via onnxruntime) ---
+ARC_PATH = Path(__file__).parent.parent / "models" / "w600k_r50.onnx"
+ARC_ZIP_URL = "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"
+ARC_MIN_BYTES = 100_000_000  # ~166MB ResNet50
+
+# Standard ArcFace 112x112 alignment template (InsightFace convention).
+ARC_DST = np.array([
+    [38.2946, 51.6963],
+    [73.5318, 51.5014],
+    [56.0252, 71.7366],
+    [41.5493, 92.3655],
+    [70.7299, 92.2041],
+], dtype=np.float32)
+
+_arc_session = None
+_arc_failed = False
+
+
+def _get_arcface():
+    """onnxruntime session for w600k_r50 — downloads the buffalo_l pack once."""
+    global _arc_session, _arc_failed
+    if _arc_session is not None:
+        return _arc_session
+    if _arc_failed:
+        return None
+    try:
+        if not ARC_PATH.exists() or ARC_PATH.stat().st_size < ARC_MIN_BYTES:
+            ARC_PATH.parent.mkdir(parents=True, exist_ok=True)
+            import zipfile
+            ztmp = ARC_PATH.parent / "_buffalo_l.zip"
+            socket.setdefaulttimeout(300)
+            try:
+                urllib.request.urlretrieve(ARC_ZIP_URL, str(ztmp))
+                with zipfile.ZipFile(ztmp) as z:
+                    member = next(n for n in z.namelist() if n.endswith("w600k_r50.onnx"))
+                    z.extract(member, ARC_PATH.parent)
+                    (ARC_PATH.parent / member).rename(ARC_PATH)
+            finally:
+                ztmp.unlink(missing_ok=True)
+        import onnxruntime as ort
+        so = ort.SessionOptions()
+        so.intra_op_num_threads = 1  # parallelism comes from scoring workers
+        _arc_session = ort.InferenceSession(str(ARC_PATH), so, providers=["CPUExecutionProvider"])
+        return _arc_session
+    except Exception as e:
+        print(f"[face_id] ArcFace init failed: {e}")
+        _arc_failed = True
+        return None
+
+
+def _arcface_embed(img, row) -> np.ndarray | None:
+    """512-D L2-normalized ArcFace embedding for one YuNet face row."""
+    sess = _get_arcface()
+    if sess is None:
+        return None
+    try:
+        src = np.asarray(row[4:14], dtype=np.float32).reshape(5, 2)
+        M, _ = cv2.estimateAffinePartial2D(src, ARC_DST, method=cv2.LMEDS)
+        if M is None:
+            return None
+        aligned = cv2.warpAffine(img, M, (112, 112), borderValue=0)
+        rgb = cv2.cvtColor(aligned, cv2.COLOR_BGR2RGB).astype(np.float32)
+        blob = (rgb - 127.5) / 128.0  # insightface: scale 1/128, mean 127.5
+        blob = blob.transpose(2, 0, 1)[np.newaxis]  # NCHW
+        out = sess.run(None, {sess.get_inputs()[0].name: blob})[0].reshape(-1)
+        norm = float(np.linalg.norm(out))
+        return out / norm if norm else None
+    except Exception as e:
+        print(f"[face_id] ArcFace embed failed: {e}")
+        return None
 
 
 def embedding_similarity(feat_a, feat_b) -> float | None:

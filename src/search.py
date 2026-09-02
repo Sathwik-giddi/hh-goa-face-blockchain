@@ -197,7 +197,7 @@ def reverse_image_search(
     original_path=None,
     api_key: str | None = None,
     prefer_source: str = "reddit",
-    min_face_similarity: float = 36.3,  # SFace cosine threshold for same person
+    min_face_similarity: float = 42.5,  # ArcFace cosine threshold (calibrated: same 50-100, different 0-35)
 ) -> dict:
     """Live only. Re-ranks hits by SFace face-embedding similarity (parallel).
 

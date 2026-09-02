@@ -553,12 +553,12 @@ function render(j){
   if(sim!=null){
     const meterWrap=el('div',{class:'mt-4 max-w-[420px]'});
     meterWrap.appendChild(el('div',{class:'flex justify-between text-[11px] font-mono text-slate mb-1.5'},[
-      el('span',{text:'facial similarity (own heuristic, SFace cosine)'}),
+      el('span',{text:'facial similarity (ArcFace cosine, own heuristic)'}),
       el('span',{class:'font-semibold text-ink',text:sim+'%'}),
     ]));
     const meter=el('div',{class:'meter'});
     const bar=el('i'); bar.style.width='0%'; meter.appendChild(bar);
-    meter.appendChild(el('u',{style:'left:36.3%',title:'same-person threshold 36.3%'}));
+    meter.appendChild(el('u',{style:'left:42.5%',title:'same-person threshold 42.5% (ArcFace cosine, calibrated)'}));
     meterWrap.appendChild(meter);
     mb.appendChild(meterWrap);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.width=Math.min(100,sim)+'%'; }));

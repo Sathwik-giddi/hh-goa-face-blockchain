@@ -11,40 +11,72 @@
   },
   {
     "index": 1,
-    "timestamp": "2026-09-02T14:14:39.837217+00:00",
+    "timestamp": "2026-09-02T14:57:41.326423+00:00",
     "prev_hash": "dcf865064d9fafdfa18f49f36fe4e997550aefdab32f552f5239b55b3691f828",
-    "data_hash": "a97e4eabce1441cd7f173e373690d5bbf3d2d4e62f31987847f1fe2045672b3f",
+    "data_hash": "4ee453a4edd77fd6e092ee6165ea6b48cb482b390819e99622e913b0afc13a3d",
     "data": {
-      "fingerprint": "genesis_marker",
-      "note": "live-only build genesis"
+      "fingerprint": "9103dcfd310433c187fddfb027b7e149abb9838cdbf9708279f9a11be3bea6ad",
+      "mode": "evm",
+      "txHash": "0xfc7a5656a4cbeb641b53206b3cb47e0dc447f1d8e5cdab35fb7a1bee036ef24e",
+      "blockNumber": 46542620,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0xfc7a5656a4cbeb641b53206b3cb47e0dc447f1d8e5cdab35fb7a1bee036ef24e",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 56,
+        "title": "An analysis of computational models for accelerating the ...",
+        "link": "https://ccc.inaoep.mx/~rcumplido/papers/2015-Rodriguez-An-analisys-of-computational.pdf",
+        "source": "INAOE",
+        "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcSzBzmYfW9pOhRZwZwJzWUr_-1d4JjLzRU5qEVlSxhSU5TBoEuBzIx87eBUCFCOipbLO3jftpzfSg-HlmiD-O3MtxqA3Z-bZwrdKZFU8AVB4F46",
+        "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcThhz6puHAqxoM7XqPNRGjM3OmccC2-mVeLHfpKlkRHj_PJs2SK",
+        "thumbnail_width": 212,
+        "thumbnail_height": 212,
+        "image": "x-raw-image:///b6f881af144a3e1677e83bdc9db7a1504e12e8d5a86ae13787c88f48264719de",
+        "image_width": 212,
+        "image_height": 212,
+        "_face_distance": 7
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.9089785814285278,
+        "bbox": [
+          207,
+          182,
+          145,
+          206
+        ],
+        "embedding_hash": "ff0f1e2c3c3c181e"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 2
     },
-    "hash": "2c44c8491ccacc9aded53d56f107cb3aefd80e80bf32ee03572b59ef9cae5d4c"
+    "hash": "03b439bf6c02d7af7f087db0d24ac473088f5e20019deb3ab9b179dabbfb7f45"
   },
   {
     "index": 2,
-    "timestamp": "2026-09-02T14:15:10.444502+00:00",
-    "prev_hash": "2c44c8491ccacc9aded53d56f107cb3aefd80e80bf32ee03572b59ef9cae5d4c",
-    "data_hash": "749dea1058c36b24b6e99bc5fbaf9e93e7f3aa70ae69edf18272a097fb450603",
+    "timestamp": "2026-09-02T15:13:36.175483+00:00",
+    "prev_hash": "03b439bf6c02d7af7f087db0d24ac473088f5e20019deb3ab9b179dabbfb7f45",
+    "data_hash": "cb2a323d21b2d4264f1799e50d90a22d2badb4ef63c190ec1391af652a058bc8",
     "data": {
-      "fingerprint": "98628faa3eb4fbc627352a173dcdc41b9fbde481dac502baf5c38cc0a0cd3678",
+      "fingerprint": "9bd48ae7beb277ff3c1d026d322c55f20e3b8553bc5ee48fd83f25f0f7263048",
       "mode": "evm",
-      "txHash": "0a8432c24cad94d8e68cffb2d8b55c8378981f885d198e11bc69167f4ccad368",
-      "blockNumber": 46540069,
-      "explorerUrl": "https://amoy.polygonscan.com/tx/0a8432c24cad94d8e68cffb2d8b55c8378981f885d198e11bc69167f4ccad368",
+      "txHash": "0x7febe45db85772051cd4111e4bd514572b1c6498120253c7b313c9589f766cd4",
+      "blockNumber": 46543573,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x7febe45db85772051cd4111e4bd514572b1c6498120253c7b313c9589f766cd4",
       "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
       "post": {
-        "position": 12,
-        "title": "The Rest of the Lenna Story",
-        "link": "http://www.lenna.org/",
-        "source": "www.lenna.org",
-        "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcTnK2w8JUzHeixX_dKy9REJ4w7HXg6-eiR40tRbbUWH4xb-s0D97mwKW7GEiQTMkxyL8zJXZR4GfKq76-fR-Dz7ys7IfY94WIF_R672MgYq-6Q",
-        "thumbnail": "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcTc0mZu_vGZ2GjTiZHp0sNA89LVU28MPdGETZSEpkOpkxNf_1IG",
-        "thumbnail_width": 168,
-        "thumbnail_height": 300,
-        "image": "http://www.lenna.org/len_top.jpg",
-        "image_width": 225,
-        "image_height": 400,
-        "_face_distance": 25
+        "position": 19,
+        "title": "reinventing the wheel - SubImage function implementation in ...",
+        "link": "https://codereview.stackexchange.com/questions/263246/subimage-function-implementation-in-c",
+        "source": "Code Review Stack Exchange",
+        "source_icon": "https://encrypted-tbn1.gstatic.com/favicon-tbn?q=tbn:ANd9GcR7zmE8UoBw4MY47agm5L5bY0nsUr-AfCYozp192l_tjuZsbzFRTi_Q2ydPKws5rg6HqOfhqP7Wcwg2DI8TwueNIgLKHU8OvUzp9500qeOUJPTZxp2WTk4QtiJJ2p7FiKIG",
+        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1DlEz8Wh55VqW9eGJ6xDfE3Cd7kcaUqg99J-V9zZgVzrmvdRs",
+        "thumbnail_width": 246,
+        "thumbnail_height": 205,
+        "image": "https://i.sstatic.net/jIDuU.png",
+        "image_width": 300,
+        "image_height": 250,
+        "_face_distance": 11
       },
       "face": {
         "engine": "opencv:yunet",
@@ -55,179 +87,12 @@
           145,
           206
         ],
-        "embedding_hash": "798a0a3f86534a0e"
+        "embedding_hash": "ff0f1e2c3c3c181e"
       },
       "search_mode": "live",
-      "reddit_found": true
+      "reddit_found": true,
+      "face_similar_count": 1
     },
-    "hash": "5211e60e6d195b4b8700d68008d64705cdb1dcb10d04a8a2641995add2430b10"
-  },
-  {
-    "index": 3,
-    "timestamp": "2026-09-02T14:15:46.297773+00:00",
-    "prev_hash": "5211e60e6d195b4b8700d68008d64705cdb1dcb10d04a8a2641995add2430b10",
-    "data_hash": "ca05ac7ab4261bdc399063586966e0124f3a3d500ec3592ae30580e10da9db03",
-    "data": {
-      "fingerprint": "4de380692ee794762604972c8a7d54b0747dbc2dbf0d06e5ff6541ca6305b2c4",
-      "mode": "evm",
-      "txHash": "113b824f95c6ade67328a845917ad7f478cfa1c50089b30841fdc4463463893b",
-      "blockNumber": 46540105,
-      "explorerUrl": "https://amoy.polygonscan.com/tx/113b824f95c6ade67328a845917ad7f478cfa1c50089b30841fdc4463463893b",
-      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
-      "post": {
-        "position": 35,
-        "title": "Aline Kwigomba (@AlineKwigomba) / Posts / X",
-        "link": "https://x.com/alinekwigomba",
-        "source": "Twitter",
-        "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcSofvqtbDtdUTZsANJSe_PTSgsuDSmzMNykD5ePbsMk3EyTY0EoF56jNp_rHuufm9BtNpZYsFhp9M6u-DLxqcg2x-FRa41-OCrNmA",
-        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEc7jR1Xst_eM9t_kutO8PizjxUOnwgAU-8ejtVw56-Qk9POw3",
-        "thumbnail_width": 225,
-        "thumbnail_height": 225,
-        "image": "https://pbs.twimg.com/profile_images/902224679624200193/fOskfCDT_400x400.jpg",
-        "image_width": 400,
-        "image_height": 400,
-        "_face_distance": 23
-      },
-      "face": {
-        "engine": "opencv:yunet",
-        "conf": 0.9040992259979248,
-        "bbox": [
-          316,
-          226,
-          394,
-          497
-        ],
-        "embedding_hash": "42c221ccd8004ecf"
-      },
-      "search_mode": "live",
-      "reddit_found": true
-    },
-    "hash": "7fabf185049619c407f9d3426da20891ec05c78e2cf87d79bd6d6e07b4f62629"
-  },
-  {
-    "index": 4,
-    "timestamp": "2026-09-02T14:16:12.349532+00:00",
-    "prev_hash": "7fabf185049619c407f9d3426da20891ec05c78e2cf87d79bd6d6e07b4f62629",
-    "data_hash": "d28453ee41f2ef647f3629c31c9c635407fb3fbc9cf18df11b75610c5cc72381",
-    "data": {
-      "fingerprint": "c49167bb267f0e7e40d506d0e0ea089a2541ddd8be6726a17b1a6ac2eff1fc98",
-      "mode": "evm",
-      "txHash": "ab407ff9c757aed149d419a606d1e75dddb1472ba13a399143a1c5fe981d58e6",
-      "blockNumber": 46540131,
-      "explorerUrl": "https://amoy.polygonscan.com/tx/ab407ff9c757aed149d419a606d1e75dddb1472ba13a399143a1c5fe981d58e6",
-      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
-      "post": {
-        "position": 27,
-        "title": "In 1973, a photo of a Swedish Playboy model named Lena (left ...",
-        "link": "https://www.reddit.com/r/pics/comments/erqtr5/in_1973_a_photo_of_a_swedish_playboy_model_named/",
-        "source": "Reddit",
-        "source_icon": "https://encrypted-tbn2.gstatic.com/favicon-tbn?q=tbn:ANd9GcRFeJS-IhfJCysoVmCqJ1d-1lzbIHTsbcy4DrBsZJpxQ31zznhym7THnNEKCEnngpvdl4aupEFtEblIPBEMJY7_biy055d40m6TYfVg7CpFOrWOXw",
-        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeZkuQ3HWGxMyAyVhd0Od81Ev0OL8QrqZB1pGcYgpEa4DN42JR",
-        "thumbnail_width": 157,
-        "thumbnail_height": 321,
-        "image": "https://external-preview.redd.it/in-1973-a-photo-of-a-swedish-playboy-model-named-lena-left-v0-z7bX36rEY_hrOBPag5ayauV2DrqQr7mMSM44AIgk1_U.jpg?auto=webp&s=e136a7106d9a2ae6307790024fe8ec81fb48df65",
-        "image_width": 858,
-        "image_height": 1751,
-        "_face_distance": 28
-      },
-      "face": {
-        "engine": "opencv:yunet",
-        "conf": 0.9089785814285278,
-        "bbox": [
-          207,
-          182,
-          145,
-          206
-        ],
-        "embedding_hash": "798a0a3f86534a0e"
-      },
-      "search_mode": "live",
-      "reddit_found": true
-    },
-    "hash": "4842dc04b45c07f7fa7a76b747f94f0cf817576c911cae63497148940b7d0c8c"
-  },
-  {
-    "index": 5,
-    "timestamp": "2026-09-02T14:17:44.166105+00:00",
-    "prev_hash": "4842dc04b45c07f7fa7a76b747f94f0cf817576c911cae63497148940b7d0c8c",
-    "data_hash": "018d045731d935799e089b65b232c34da94e7efa7b77291d6a9e5d7afaa2a8fc",
-    "data": {
-      "fingerprint": "16a2b2e91603d547b28aaed8ee5bd29c8c79ffa38d6f49f159966c14d00364cc",
-      "mode": "evm",
-      "txHash": "dac49bcd562569ab288018b2f46762a8d37b549e6638a376262882bc58d65ec4",
-      "blockNumber": 46540223,
-      "explorerUrl": "https://amoy.polygonscan.com/tx/dac49bcd562569ab288018b2f46762a8d37b549e6638a376262882bc58d65ec4",
-      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
-      "post": {
-        "position": 12,
-        "title": "Framework Torch: modul pro zpracov\u00e1n\u00ed rastrov\u00fdch obr\u00e1zk\u016f ...",
-        "link": "https://www.root.cz/clanky/framework-torch-modul-pro-zpracovani-rastrovych-obrazku/",
-        "source": "Root.cz",
-        "source_icon": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcS01AQj80r11V2tzpK7O1QMszdRFXKIhegYyxrc8mYztGx9JUwKx-oUNiAollZcyywvDrZF9KFnN3xux_sonQBWvZSy4Xouatm3G2_iG7Uvfw",
-        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTs-26zGuUS2zpo08_6zLQY6Fn50cPJcVBHvoMXQg9c9QFsJ9L6",
-        "thumbnail_width": 225,
-        "thumbnail_height": 225,
-        "image": "https://i.iinfo.cz/images/693/torch5-10.png",
-        "image_width": 512,
-        "image_height": 512,
-        "_face_distance": 24
-      },
-      "face": {
-        "engine": "opencv:yunet",
-        "conf": 0.9089785814285278,
-        "bbox": [
-          207,
-          182,
-          145,
-          206
-        ],
-        "embedding_hash": "798a0a3f86534a0e"
-      },
-      "search_mode": "live",
-      "reddit_found": true
-    },
-    "hash": "276727fe74f6e717961432ab3f2966f80c710e01943f4b596cb9b81366b029f5"
-  },
-  {
-    "index": 6,
-    "timestamp": "2026-09-02T14:23:03.380558+00:00",
-    "prev_hash": "276727fe74f6e717961432ab3f2966f80c710e01943f4b596cb9b81366b029f5",
-    "data_hash": "018d045731d935799e089b65b232c34da94e7efa7b77291d6a9e5d7afaa2a8fc",
-    "data": {
-      "fingerprint": "16a2b2e91603d547b28aaed8ee5bd29c8c79ffa38d6f49f159966c14d00364cc",
-      "mode": "evm",
-      "txHash": "e04b5df86696e32e60e1e7b5aa6733b1bd2e41347a47cf845a0443d401055efe",
-      "blockNumber": 46540542,
-      "explorerUrl": "https://amoy.polygonscan.com/tx/e04b5df86696e32e60e1e7b5aa6733b1bd2e41347a47cf845a0443d401055efe",
-      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
-      "post": {
-        "position": 9,
-        "title": "Framework Torch: modul pro zpracov\u00e1n\u00ed rastrov\u00fdch obr\u00e1zk\u016f ...",
-        "link": "https://www.root.cz/clanky/framework-torch-modul-pro-zpracovani-rastrovych-obrazku/",
-        "source": "Root.cz",
-        "source_icon": "https://encrypted-tbn3.gstatic.com/favicon-tbn?q=tbn:ANd9GcS01AQj80r11V2tzpK7O1QMszdRFXKIhegYyxrc8mYztGx9JUwKx-oUNiAollZcyywvDrZF9KFnN3xux_sonQBWvZSy4Xouatm3G2_iG7Uvfw",
-        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTs-26zGuUS2zpo08_6zLQY6Fn50cPJcVBHvoMXQg9c9QFsJ9L6",
-        "thumbnail_width": 225,
-        "thumbnail_height": 225,
-        "image": "https://i.iinfo.cz/images/693/torch5-10.png",
-        "image_width": 512,
-        "image_height": 512,
-        "_face_distance": 24
-      },
-      "face": {
-        "engine": "opencv:yunet",
-        "conf": 0.9089785814285278,
-        "bbox": [
-          207,
-          182,
-          145,
-          206
-        ],
-        "embedding_hash": "798a0a3f86534a0e"
-      },
-      "search_mode": "live",
-      "reddit_found": true
-    },
-    "hash": "125be3994f62abae7e58bf9a8d9043847c1762a2e5d65ed9f6c6cc39907607c9"
+    "hash": "45092f4ee3146059ba9fb9ce5a2860f8e50ca8597dbd87cb35981c55a4146c2e"
   }
 ]

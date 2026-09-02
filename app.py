@@ -1,13 +1,14 @@
 """10/10 frontend API — LIVE ONLY, serves forensic luxury UI."""
 import os
 import json
-import shutil
 import re
-import hashlib
+import shutil
 from pathlib import Path
 from datetime import datetime, timezone
 from dotenv import load_dotenv
-load_dotenv()
+
+# load .env from repo root, not cwd
+load_dotenv(Path(__file__).parent / ".env")
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
@@ -16,27 +17,47 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.face_id import detect_and_encode
 from src.search import reverse_image_search
-from src.utils import fingerprint_post
+from src.utils import fingerprint_post, is_hex64, safe_filename
 from src.blockchain import anchor, verify
 from src.blockchain_local import _load_chain
 
-app = FastAPI(title="HH Goa — Face→Social→Chain", version="2.0-live")
+app = FastAPI(title="HH Goa — Face→Social→Chain", version="3.0-live")
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# CORS: lock to local dev origins (override via ALLOWED_ORIGINS env if needed)
+allowed = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:3000,http://localhost:3000")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in allowed.split(",") if o.strip()],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-Requested-With"],
+    allow_credentials=False,
+)
 
-FRONTEND = Path("frontend")
-OUTPUTS = Path("outputs")
-CHAIN = Path("chain.json")
+REPO_ROOT = Path(__file__).parent
+FRONTEND = REPO_ROOT / "frontend"
+UPLOADS = REPO_ROOT / "outputs" / "_uploads"
+UPLOADS.mkdir(parents=True, exist_ok=True)
+OUTPUTS = REPO_ROOT / "outputs"
+CHAIN = Path(os.getenv("CHAIN_FILE", str(REPO_ROOT / "chain.json")))
 
-ALLOWED_IMG = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic"}
+ALLOWED_IMG = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/avif"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10MB cap
+
+
+def _hex64(s: str) -> bool:
+    return is_hex64(s)
 
 
 @app.get("/api/health")
 def health():
-    chain = _load_chain(CHAIN) if CHAIN.exists() else []
+    try:
+        chain = _load_chain(CHAIN) if CHAIN.exists() else []
+        height = len(chain)
+    except Exception as e:
+        return {"ok": False, "error": f"chain load failed: {e}"}
     return {
         "ok": True,
-        "chain_height": len(chain),
+        "chain_height": height,
         "mode": os.getenv("BLOCKCHAIN_MODE", "local"),
         "live": bool(os.getenv("SERPAPI_API_KEY")),
     }
@@ -44,82 +65,108 @@ def health():
 
 @app.get("/api/chain")
 def chain_view():
-    c = _load_chain(CHAIN) if CHAIN.exists() else []
+    try:
+        c = _load_chain(CHAIN) if CHAIN.exists() else []
+    except Exception as e:
+        raise HTTPException(500, f"chain load failed: {e}")
     return {"chain": c[-10:][::-1], "height": len(c)}
-
-
-def _hex64_ok(s: str) -> bool:
-    return bool(s) and len(s) == 64 and bool(re.match(r"^[0-9a-fA-F]{64}$", s))
 
 
 @app.get("/api/verify")
 def verify_api(hash: str = Query("")):
-    if not _hex64_ok(hash):
-        raise HTTPException(400, "hash must be 64-hex SHA-256 (got: '" + hash + "')")
-    return verify(hash, chain_file=str(CHAIN))
+    if not _hex64(hash):
+        raise HTTPException(400, "hash must be 64-hex SHA-256")
+    try:
+        return verify(hash, chain_file=str(CHAIN))
+    except Exception as e:
+        raise HTTPException(500, f"verify failed: {e}")
 
 
 @app.post("/api/scan")
 async def scan(file: UploadFile = File(...)):
     ct = (file.content_type or "").lower()
-    if not (ct.startswith("image/") or ct in ALLOWED_IMG or ct == ""):
-        raise HTTPException(400, "Upload an image (jpg/png/webp)")
+    if not (ct.startswith("image/") or ct in ALLOWED_IMG):
+        raise HTTPException(400, "Upload an image (jpg/png/webp/heic)")
 
-    safe = re.sub(r"[^A-Za-z0-9._-]", "_", file.filename or "img")
-    tmp = Path(f"outputs/_upload_{datetime.now(timezone.utc).strftime('%H%M%S%f')}_{safe}")
-    tmp.parent.mkdir(parents=True, exist_ok=True)
-    with open(tmp, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    if tmp.stat().st_size == 0:
-        raise HTTPException(400, "Empty file")
-
-    # 1 face detect
-    face = detect_and_encode(tmp, out_dir=OUTPUTS)
-    if face.get("num_faces", 0) == 0:
-        # still try search on full image
-        pass
-
-    # 2 live search (face re-rank)
+    safe = safe_filename(file.filename or "img")
+    # unique per-request — no race
+    tmp = UPLOADS / f"upload_{datetime.now(timezone.utc).strftime('%H%M%S%f')}_{safe}"
+    size = 0
     try:
-        search = reverse_image_search(face["crop_path"], original_path=str(tmp))
+        with open(tmp, "wb") as f:
+            while True:
+                chunk = await file.read(64 * 1024)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    raise HTTPException(413, f"file too large (max {MAX_UPLOAD_BYTES // 1024 // 1024}MB)")
+                f.write(chunk)
+    except HTTPException:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+        raise
     except Exception as e:
-        raise HTTPException(500, f"Live search failed: {e}. Set SERPAPI_API_KEY in .env (free 250 at serpapi.com)")
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+        raise HTTPException(500, f"upload failed: {e}")
 
-    vm = search.get("visual_matches", [])
-    top = search.get("top_match")
-    if not top:
-        raise HTTPException(404, "Live Lens returned 0 hits — no public indexed copy of this face. Try a publicly posted image (IG/X/Reddit).")
+    if size == 0:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+        raise HTTPException(400, "empty file")
 
-    # 3 fingerprint + anchor
-    fp = fingerprint_post(top, image_path=face["crop_path"])
-    fingerprint = fp["fingerprint_sha256"]
-    payload = {
-        "post": top,
-        "face": {k: face[k] for k in ["engine", "conf", "bbox", "embedding_hash"] if k in face},
-        "search_mode": search["mode"],
-        "reddit_found": search.get("reddit_found"),
-        "face_similar_count": search.get("face_similar_count"),
-    }
-    receipt = anchor(fingerprint, payload, chain_file=str(CHAIN))
+    try:
+        face = detect_and_encode(tmp, out_dir=OUTPUTS)
+        if not face.get("crop_path"):
+            raise HTTPException(422, face.get("warning", "no face detected"))
 
-    return {
-        "face": face,
-        "search": {
-            "mode": search["mode"],
+        try:
+            search = reverse_image_search(face["crop_path"], original_path=str(tmp))
+        except FileNotFoundError as e:
+            raise HTTPException(500, f"search input missing: {e}")
+        except Exception as e:
+            raise HTTPException(500, f"Live search failed: {e}. Set SERPAPI_API_KEY in .env (free 250 at serpapi.com).")
+
+        vm = search.get("visual_matches", [])
+        top = search.get("top_match")
+        if not top:
+            raise HTTPException(404, "Live Lens returned 0 hits — no public indexed copy of this face. Try a publicly posted image (IG/X/Reddit).")
+
+        fp = fingerprint_post(top, image_path=face["crop_path"])
+        fingerprint = fp["fingerprint_sha256"]
+        payload = {
+            "post": top,
+            "face": {k: face[k] for k in ["engine", "conf", "bbox", "embedding_hash"] if k in face},
+            "search_mode": search["mode"],
             "reddit_found": search.get("reddit_found"),
-            "num_hits": len(vm),
             "face_similar_count": search.get("face_similar_count"),
-            "top": top,
-            "hits": vm[:8],
-        },
-        "fingerprint": fp,
-        "receipt": receipt,
-        "verify": verify(fingerprint, chain_file=str(CHAIN)),
-    }
+        }
+        try:
+            receipt = anchor(fingerprint, payload, chain_file=str(CHAIN))
+        except Exception as e:
+            raise HTTPException(500, f"anchor failed: {e}")
+
+        return {
+            "face": face,
+            "search": {
+                "mode": search["mode"],
+                "reddit_found": search.get("reddit_found"),
+                "num_hits": len(vm),
+                "face_similar_count": search.get("face_similar_count"),
+                "top": top,
+                "hits": vm[:8],
+            },
+            "fingerprint": fp,
+            "receipt": receipt,
+            "verify": verify(fingerprint, chain_file=str(CHAIN)),
+        }
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
 
 
-# serve frontend
+# Static mount — only AFTER all API routes
 if FRONTEND.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND)), name="static")
 
@@ -129,15 +176,20 @@ def index():
     p = FRONTEND / "index.html"
     if p.exists():
         return FileResponse(str(p))
-    return JSONResponse({"hint": "Frontend missing"})
+    return JSONResponse({"hint": "frontend missing"}, status_code=500)
 
 
 @app.get("/outputs/{path:path}")
 def outputs_file(path: str):
     fp = OUTPUTS / path
     try:
-        if not fp.exists() or not str(fp.resolve()).startswith(str(OUTPUTS.resolve())):
+        resolved = fp.resolve(strict=False)
+        out_resolved = OUTPUTS.resolve()
+        # Python 3.9+: is_relative_to
+        if not resolved.is_relative_to(out_resolved):
             raise HTTPException(404)
-    except ValueError:
-        raise HTTPException(400)
+    except (ValueError, RuntimeError):
+        raise HTTPException(404)
+    if not fp.exists() or not fp.is_file():
+        raise HTTPException(404)
     return FileResponse(str(fp))

@@ -1,158 +1,256 @@
-"""Live reverse-image search — SerpAPI Google Lens + face-similarity re-rank. LIVE ONLY.
-Fixes celebrity-only bias: Lens is visual, not face-identity. We re-rank Lens hits by face pHash
-so any face on the open web (not just celebrities) surfaces true matches. Tries crop + full image,
-Lens + Reverse Image fallback, and filters to face-similar only.
+"""Live reverse-image search — SerpAPI Google Lens + face-similarity re-rank.
+
+Picks Reddit-aware ranking, supports Lens + google_reverse_image fallback, and
+uses real 64-bit pHash Hamming distance (not sha256-of-bits) so any face on the
+open web — not just celebrities — surfaces true matches.
 """
+import io
 import os
-import hashlib
+import tempfile
+import threading
 from pathlib import Path
-import requests
+
 import cv2
 import numpy as np
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-def _phash(image_path: Path) -> str:
+_THREAD_LOCAL = threading.local()
+
+
+def _phash(image_path) -> str:
+    """64-bit pHash, returns 16 hex chars.
+
+    Returns empty string on failure. Thread-safe per-call (no shared state).
+    """
     try:
         img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
-        if img is None:
+        if img is None or img.size == 0:
             from PIL import Image
             pil = Image.open(image_path).convert("L")
-            img = cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        small = cv2.resize(img, (32, 32), interpolation=cv2.INTER_AREA)
+            arr = np.array(pil)
+            if arr.ndim != 2:
+                return ""
+            img = arr
+        small = cv2.resize(img, (8, 8), interpolation=cv2.INTER_AREA)
         m = small.mean()
-        bits = (small > m).astype(np.uint8).tobytes()
-        return hashlib.sha256(bits).hexdigest()[:16]
+        bits = (small > m).flatten().astype(np.uint8)
+        packed = int(np.packbits(bits).tobytes().hex(), 16)
+        return f"{packed:016x}"
     except Exception:
         return ""
 
-def _hamming(a: str, b: str) -> int:
-    if not a or not b or len(a)!=len(b): return 999
-    # hex to bits hamming
-    try:
-        ai, bi = int(a,16), int(b,16)
-        return bin(ai ^ bi).count("1")
-    except: return 999
 
-def _serpapi_upload(image_path: Path, api_key: str):
+def _hamming(a: str, b: str) -> int:
+    """Hamming distance on two 64-bit hex strings (returns 0..64)."""
+    if not a or not b or len(a) != len(b):
+        return 999
+    try:
+        return bin(int(a, 16) ^ int(b, 16)).count("1")
+    except Exception:
+        return 999
+
+
+def _serpapi_upload(image_path: Path, api_key: str, timeout: int = 30) -> str:
+    """Two-step upload: POST image -> image_id."""
     with open(image_path, "rb") as f:
         files = {"image": (image_path.name, f, "image/jpeg")}
         data = {"api_key": api_key}
-        r = requests.post("https://serpapi.com/image", files=files, data=data, timeout=30)
-        r.raise_for_status()
-        j = r.json()
-        image_id = j.get("image_id") or j.get("imageId")
-        if not image_id:
-            raise RuntimeError(f"SerpAPI upload no image_id: {j}")
-        return image_id
+        r = requests.post("https://serpapi.com/image", files=files, data=data, timeout=timeout)
+    r.raise_for_status()
+    j = r.json()
+    image_id = j.get("image_id") or j.get("imageId")
+    if not image_id:
+        raise RuntimeError(f"SerpAPI upload no image_id: {j}")
+    return image_id
 
-def _lens(image_id: str, api_key: str, hl="en", country="us"):
+
+def _lens_search(image_id: str, api_key: str, hl: str = "en", country: str = "us", timeout: int = 30) -> dict:
     params = {"engine": "google_lens", "image_id": image_id, "api_key": api_key, "hl": hl, "country": country}
-    r = requests.get("https://serpapi.com/search.json", params=params, timeout=30)
+    r = requests.get("https://serpapi.com/search.json", params=params, timeout=timeout)
     r.raise_for_status()
     return r.json()
 
-def _reverse_image(image_id: str, api_key: str):
+
+def _reverse_image_search(image_id: str, api_key: str, timeout: int = 30) -> dict:
     params = {"engine": "google_reverse_image", "image_id": image_id, "api_key": api_key}
-    r = requests.get("https://serpapi.com/search.json", params=params, timeout=30)
+    r = requests.get("https://serpapi.com/search.json", params=params, timeout=timeout)
     r.raise_for_status()
     return r.json()
 
-def _fetch_hits(image_path: Path, api_key: str, prefer_source="reddit"):
-    # try Lens crop first, then Reverse Image fallback
+
+def _fetch_hits(image_path: Path, api_key: str) -> tuple:
+    """Run Lens + fallback google_reverse_image, return (deduped_hits, [raw])."""
     image_id = _serpapi_upload(image_path, api_key)
     raws = []
-    try:
-        raw = _lens(image_id, api_key)
-        raws.append(("lens", raw))
-        vm = raw.get("visual_matches") or raw.get("image_results") or []
-        if len(vm) < 5:  # sparse, try exact_matches + reverse_image
-            vm2 = raw.get("exact_matches") or []
-            if vm2: vm = vm + vm2
-        if len(vm) < 5:
-            try:
-                raw2 = _reverse_image(image_id, api_key)
-                raws.append(("reverse", raw2))
-                vm2 = raw2.get("image_results") or raw2.get("visual_matches") or []
-                vm = vm + vm2
-            except Exception as e:
-                print(f"[search] reverse fallback failed: {e}")
-    except Exception as e:
-        raise RuntimeError(f"Lens failed: {e}")
+    raw = _lens_search(image_id, api_key)
+    raws.append(("lens", raw))
+    vm = raw.get("visual_matches") or raw.get("image_results") or []
+    if len(vm) < 5:
+        ex = raw.get("exact_matches") or []
+        if ex:
+            vm = vm + ex
+    if len(vm) < 5:
+        try:
+            raw2 = _reverse_image_search(image_id, api_key)
+            raws.append(("reverse", raw2))
+            vm2 = raw2.get("image_results") or raw2.get("visual_matches") or []
+            vm = vm + vm2
+        except Exception as e:
+            print(f"[search] reverse_image fallback failed: {e}")
 
-    # dedup by link
-    seen=set(); uniq=[]
+    # dedup by link (keep first), but keep hits without link (only thumbnail)
+    seen = set()
+    out = []
     for v in vm:
-        link=v.get("link") or v.get("url") or ""
-        if link and link not in seen:
-            seen.add(link); uniq.append(v)
-    return uniq, raws
+        link = v.get("link") or v.get("url") or ""
+        key = link or ("nokey:" + (v.get("thumbnail") or ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(v)
+    return out, raws
 
-def reverse_image_search(image_path: str | Path, original_path: str | Path | None = None, api_key: str | None = None, prefer_source: str = "reddit") -> dict:
-    """Live only. Re-ranks Lens hits by face pHash so non-celebrity public faces surface."""
+
+def _score_thumbnail(url: str, query_hash: str) -> tuple:
+    """Download thumbnail, return (face_distance or None, error)."""
+    if not url or not query_hash:
+        return None, "no url or query"
+    try:
+        r = requests.get(
+            url, timeout=4,
+            headers={"User-Agent": "Mozilla/5.0", "Accept": "image/*,*/*;q=0.5"},
+        )
+        if r.status_code >= 400:
+            return None, f"HTTP {r.status_code}"
+        ct = (r.headers.get("content-type") or "").lower()
+        # accept if starts with image OR if data decodes to image
+        if not ct.startswith("image/"):
+            # try to decode anyway
+            arr = np.frombuffer(r.content, dtype=np.uint8)
+            if arr.size == 0:
+                return None, "empty"
+            test = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+            if test is None:
+                return None, "not image"
+        else:
+            arr = np.frombuffer(r.content, dtype=np.uint8)
+        if arr.size == 0:
+            return None, "empty"
+        if arr.size > 5 * 1024 * 1024:
+            return None, "too large"
+        # decode in-memory (no /tmp file, no race)
+        img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+        if img is None or img.size == 0:
+            return None, "decode fail"
+        small = cv2.resize(img, (8, 8), interpolation=cv2.INTER_AREA)
+        m = small.mean()
+        bits = (small > m).flatten().astype(np.uint8)
+        packed = int(np.packbits(bits).tobytes().hex(), 16)
+        thash = f"{packed:016x}"
+        return _hamming(query_hash, thash), None
+    except Exception as e:
+        return None, str(e)[:40]
+
+
+def reverse_image_search(
+    image_path,
+    original_path=None,
+    api_key: str | None = None,
+    prefer_source: str = "reddit",
+    max_thumb_score: int = 12,
+) -> dict:
+    """Live only. Re-ranks Lens hits by face pHash on thumbnails (parallel)."""
     image_path = Path(image_path)
     api_key = api_key or os.getenv("SERPAPI_API_KEY") or ""
     if not api_key:
-        raise RuntimeError("SERPAPI_API_KEY missing — get free 250 at serpapi.com/users/sign_up. Set in .env.")
+        raise RuntimeError(
+            "SERPAPI_API_KEY missing — get free 250 at serpapi.com/users/sign_up "
+            "(email only, no card). No mock fallback in LIVE mode."
+        )
+    if not image_path.exists():
+        raise FileNotFoundError(f"image not found: {image_path}")
 
-    # 1. try crop
     query_hash = _phash(image_path)
-    hits, raws = _fetch_hits(image_path, api_key, prefer_source)
+    hits, raws = _fetch_hits(image_path, api_key)
+    sparse_first_pass = (len(hits) < 8)
 
-    # 2. also try full image if crop sparse or low face-similar
-    if original_path and Path(original_path).exists() and str(Path(original_path).resolve()) != str(image_path.resolve()):
+    # Only do full-image fallback if crop search was sparse
+    if sparse_first_pass and original_path and Path(original_path).exists():
         try:
-            hits2, raws2 = _fetch_hits(Path(original_path), api_key, prefer_source)
-            raws.extend(raws2)
-            # merge
-            seen=set(h.get("link") for h in hits)
-            for h in hits2:
-                if h.get("link") not in seen:
-                    hits.append(h); seen.add(h.get("link"))
+            orig_hash = _phash(Path(original_path))
+            if orig_hash and orig_hash != query_hash:
+                hits2, raws2 = _fetch_hits(Path(original_path), api_key)
+                raws.extend(raws2)
+                seen = set((h.get("link") or h.get("thumbnail") or "") for h in hits)
+                for h in hits2:
+                    key = h.get("link") or h.get("thumbnail") or ""
+                    if key not in seen:
+                        hits.append(h)
+                        seen.add(key)
         except Exception as e:
-            print(f"[search] full-image search failed: {e}")
+            print(f"[search] full-image fallback failed: {e}")
 
     if not hits:
-        raise RuntimeError(f"Live search 0 hits for {image_path.name} — no public indexed copy. Try a face that is posted publicly (IG/X/Reddit). Private faces have no web hits by design.")
+        raise RuntimeError(
+            f"Live search 0 hits for {image_path.name} — no public indexed copy. "
+            "Try a face that is posted publicly (IG/X/Reddit). Private faces have no web hits by design."
+        )
 
-    # 3. face-similarity re-rank: score each hit by thumbnail pHash vs query (if thumbnail fetchable)
-    scored=[]
-    for h in hits:
-        thumb = h.get("thumbnail") or ""
-        score = 999
-        face_score = None
-        if thumb and query_hash:
+    # Score thumbnails in parallel to avoid serial 4s timeouts
+    from concurrent.futures import ThreadPoolExecutor
+    scored = [None] * len(hits)
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futures = {ex.submit(_score_thumbnail, h.get("thumbnail") or "", query_hash): i for i, h in enumerate(hits)}
+        for fut, i in futures.items():
             try:
-                # download thumb 3s timeout
-                r=requests.get(thumb, timeout=4, headers={"User-Agent":"Mozilla/5.0"})
-                if r.ok and r.headers.get("content-type","").startswith("image"):
-                    tmp=Path("/tmp/_thumb.jpg"); open(tmp,"wb").write(r.content)
-                    thash=_phash(tmp)
-                    score=_hamming(query_hash, thash)
-                    face_score = score  # lower = more similar; 0 identical, ~30 random
-                    # also check if Lens already flagged face? boost
-                    h["_face_distance"]=face_score
+                d, _err = fut.result(timeout=10)
             except Exception:
-                pass
-        # reddit boost
-        reddit_boost = -15 if (h.get("source") or "").lower()=="reddit" else 0
-        # if face distance is very high (>30), deprioritize but keep
-        rank = (face_score if face_score is not None else 40) + reddit_boost
-        scored.append((rank, h))
+                d = None
+            scored[i] = d
 
-    # sort: most face-similar + reddit first, then Lens position
-    scored.sort(key=lambda x: (x[0], x[1].get("position", 999)))
-    vm_sorted=[h for _,h in scored]
+    for h, d in zip(hits, scored):
+        h["_face_distance"] = d
 
-    # filter to face-similar if we have any within threshold
-    face_similar=[h for h in vm_sorted if h.get("_face_distance") is not None and h["_face_distance"] <= 28]
-    # threshold tuned: pHash 16 hex = 64bits, distance <=28 ~ <44% bits differ = visually similar face
-    use = face_similar if len(face_similar) >= 1 else vm_sorted
+    prefer = (prefer_source or "reddit").lower()
+    def rank(h):
+        # Lower is better. face_distance None -> 40 (middle), reddit -15, IG/X/etc 0
+        boost = -15 if (h.get("source") or "").lower() == prefer else 0
+        # also check displayed_link for reddit
+        if prefer == "reddit":
+            dl = (h.get("displayed_link") or h.get("link") or "").lower()
+            if "reddit.com" in dl:
+                boost = -15
+        d = h.get("_face_distance")
+        if d is None:
+            return (40 + boost, h.get("position", 999))
+        return (d + boost, h.get("position", 999))
 
+    vm_sorted = sorted(hits, key=rank)
+    # threshold: <=max_thumb_score face-similar, fallback to all if none
+    face_similar = [h for h in vm_sorted if h.get("_face_distance") is not None and h["_face_distance"] <= max_thumb_score]
+    use = face_similar if face_similar else vm_sorted
     top = use[0] if use else vm_sorted[0]
-    reddit_found = any((v.get("source") or "").lower()=="reddit" for v in hits)
-    # build combined raw for debugging
-    combined_raw = {"sources": [{"engine":k, "raw":r} for k,r in raws], "query_phash": query_hash, "face_similar_count": len(face_similar), "total_hits": len(hits)}
-    return {"mode": "live", "raw": combined_raw, "visual_matches": use, "all_hits": vm_sorted, "top_match": top, "reddit_found": reddit_found, "face_similar_count": len(face_similar)}
+
+    reddit_found = any(
+        (h.get("source") or "").lower() == "reddit" or "reddit.com" in (h.get("displayed_link") or h.get("link") or "").lower()
+        for h in hits
+    )
+
+    combined_raw = {
+        "sources": [{"engine": k, "raw": r} for k, r in raws],
+        "query_phash": query_hash,
+        "face_similar_count": len(face_similar),
+        "total_hits": len(hits),
+    }
+    return {
+        "mode": "live",
+        "raw": combined_raw,
+        "visual_matches": use,
+        "all_hits": vm_sorted,
+        "top_match": top,
+        "reddit_found": reddit_found,
+        "face_similar_count": len(face_similar),
+    }

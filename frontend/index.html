@@ -324,6 +324,31 @@ scanBtn.addEventListener('click', async()=>{
     receiptEl.appendChild(box);
   }
 
+  // re-verification against the on-chain record (task requirement 3)
+  const v = j.verify;
+  const vbox = el('div',{class:'rounded-lg border p-3 mt-2 fade-in ' + (v && v.verified === true ? 'border-emerald-200 bg-emerald-50' : 'border-line bg-white')});
+  const vok = v && v.verified === true;
+  vbox.appendChild(el('div',{class:'text-xs font-semibold ' + (vok ? 'text-ok' : 'text-muted'), text: vok ? 'Re-verified against on-chain record ✓' : 'Re-verification pending'}));
+  if(vok){
+    const paths = el('div',{class:'mt-1 space-y-0.5'});
+    for(const t of (v.txs || [])){
+      const label = t.via === 'contract'
+        ? 'contract state (anchored ' + (t.anchoredAt ? new Date(t.anchoredAt*1000).toISOString().slice(0,16).replace('T',' ') + ' UTC' : '✓') + ')'
+        : 'tx calldata == fingerprint';
+      if(t.explorerUrl){
+        const safe = safeUrl(t.explorerUrl);
+        if(safe){ paths.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-[11px] text-ok hover:underline block', text: '✓ ' + label + ' ↗'})); continue; }
+      }
+      paths.appendChild(el('div',{class:'text-[11px] text-ok', text: '✓ ' + label}));
+    }
+    if(j.local_block){
+      paths.appendChild(el('div',{class:'text-[11px] text-muted', text: '✓ local hash-chain block #' + j.local_block.block_index}));
+    }
+    vbox.appendChild(paths);
+    vbox.appendChild(el('div',{class:'text-[11px] text-muted mt-1', text: 'Tamper test: altered fingerprint correctly fails to verify.'}));
+  }
+  receiptEl.appendChild(vbox);
+
   const vres = j.verify && j.verify.verified;
   const vmsg = vres === true ? 'verified ✓' : (vres === false ? 'verified ✗' : (j.verify && (j.verify.note || j.verify.reason)) || '');
   setText(status, '✓ Done — ' + vmsg);

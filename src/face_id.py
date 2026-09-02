@@ -6,6 +6,7 @@ Handles 3-quarter, side profile, glasses, and small faces much better than Haar.
 Fallback: OpenCV Haar (frontal only) if YuNet unavailable.
 """
 import hashlib
+import threading
 from pathlib import Path
 import cv2
 import numpy as np
@@ -13,6 +14,10 @@ import urllib.request
 import socket
 
 from .utils import ensure_image
+
+# OpenCV 5's new DNN graph engine is not thread-safe — concurrent detect/embed
+# calls on shared nets corrupt each other. Serialize all DNN forwards.
+_DNN_LOCK = threading.Lock()
 
 
 # --- YuNet singleton with safe download ---
@@ -135,6 +140,127 @@ def crop_face(img, bbox, out_path: Path) -> Path:
     if not ok:
         raise IOError(f"imwrite failed: {out_path}")
     return out_path
+
+
+# --- SFace recognizer singleton (real face embeddings for match re-ranking) ---
+SFACE_PATH = Path(__file__).parent.parent / "models" / "face_recognition_sface_2021dec.onnx"
+SFACE_URL = (
+    "https://github.com/opencv/opencv_zoo/raw/main/models/"
+    "face_recognition_sface/face_recognition_sface_2021dec.onnx"
+)
+SFACE_MIN_BYTES = 1_000_000  # ~37MB ONNX
+
+_rec = None
+_rec_failed = False
+
+
+def _get_recognizer():
+    """Get cached SFace recognizer, downloading if missing or truncated."""
+    global _rec, _rec_failed
+    if _rec is not None:
+        return _rec
+    if _rec_failed:
+        return None
+    try:
+        if not SFACE_PATH.exists() or SFACE_PATH.stat().st_size < SFACE_MIN_BYTES:
+            SFACE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            socket.setdefaulttimeout(120)
+            try:
+                urllib.request.urlretrieve(SFACE_URL, str(SFACE_PATH))
+            except Exception as e:
+                print(f"[face_id] SFace download failed: {e}")
+                if SFACE_PATH.exists() and SFACE_PATH.stat().st_size < SFACE_MIN_BYTES:
+                    SFACE_PATH.unlink(missing_ok=True)
+                _rec_failed = True
+                return None
+        if not hasattr(cv2, "FaceRecognizerSF"):
+            _rec_failed = True
+            return None
+        _rec = cv2.FaceRecognizerSF.create(str(SFACE_PATH), "")
+        return _rec
+    except Exception as e:
+        print(f"[face_id] SFace init failed: {e}")
+        _rec_failed = True
+        return None
+
+
+def detect_rows_yunet(img):
+    """Raw YuNet face rows (needed for SFace alignCrop).
+
+    Returns (img_used, rows) — img_used may be a resized copy and MUST be
+    passed to alignCrop together with the rows, since coordinates match it.
+    """
+    det = _get_yunet()
+    if det is None or img is None or img.size == 0:
+        return img, []
+    h, w = img.shape[:2]
+    if w < 32 or h < 32:
+        return img, []
+    if max(w, h) > 640:
+        scale = 640 / max(w, h)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)))
+    det.setInputSize((img.shape[1], img.shape[0]))
+    try:
+        with _DNN_LOCK:
+            retval, faces = det.detect(img)
+    except Exception:
+        return img, []
+    if faces is None or retval == 0:
+        return img, []
+    rows = []
+    for f in faces:
+        if float(f[14]) < 0.5:
+            continue
+        if not np.isfinite(np.asarray(f[:14], dtype=np.float64)).all():
+            continue  # NaN/inf landmarks break alignCrop
+        rows.append(f)
+    return img, rows
+
+
+def face_embedding(image, face_row=None):
+    """128-D SFace embedding for the largest face in `image`.
+
+    image: file path or BGR ndarray. Returns (embedding, method) where
+    embedding is a float32 vector or None.
+    """
+    img = ensure_image(image) if not isinstance(image, np.ndarray) else image
+    rec = _get_recognizer()
+    if rec is None:
+        return None, "sface_unavailable"
+    img, rows = detect_rows_yunet(img)
+    if not rows:
+        return None, "no_face"
+    rows.sort(key=lambda r: r[2] * r[3], reverse=True)
+    for row in rows[:2]:  # try largest, then second-largest
+        try:
+            with _DNN_LOCK:
+                aligned = rec.alignCrop(img, row)
+                feat = rec.feature(aligned)
+            return feat.reshape(-1), "sface"
+        except Exception as e:
+            print(f"[face_id] SFace embed failed: {e}")
+    return None, "embed_failed"
+
+
+def embedding_similarity(feat_a, feat_b) -> float | None:
+    """Cosine similarity 0..100 between two SFace features (None if either missing).
+
+    Computed directly (not via rec.match, whose return convention changed across
+    OpenCV versions). SFace's standard same-person threshold is cosine 0.363,
+    so on this scale: same person typically 40-100, different person ~5-20.
+    """
+    if feat_a is None or feat_b is None:
+        return None
+    try:
+        a = np.asarray(feat_a, dtype=np.float32).reshape(-1)
+        b = np.asarray(feat_b, dtype=np.float32).reshape(-1)
+        na, nb = float(np.linalg.norm(a)), float(np.linalg.norm(b))
+        if na == 0 or nb == 0:
+            return None
+        cos = float(np.dot(a, b) / (na * nb))
+        return max(0.0, min(100.0, round(cos * 100.0, 1)))
+    except Exception:
+        return None
 
 
 def encode_phash(image_path) -> str:

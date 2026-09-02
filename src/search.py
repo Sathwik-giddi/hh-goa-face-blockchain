@@ -15,6 +15,8 @@ import numpy as np
 import requests
 from dotenv import load_dotenv
 
+from .face_id import face_embedding, embedding_similarity
+
 load_dotenv()
 
 _THREAD_LOCAL = threading.local()
@@ -114,9 +116,13 @@ def _fetch_hits(image_path: Path, api_key: str) -> tuple:
     return out, raws
 
 
-def _score_thumbnail(url: str, query_hash: str) -> tuple:
-    """Download thumbnail, return (face_distance or None, error)."""
-    if not url or not query_hash:
+def _score_thumbnail_face(url: str, query_feat) -> tuple:
+    """Download image, embed its largest face with SFace, return (similarity 0-100 or None, error).
+
+    Real face recognition: matches the person, not the picture. Falls back to
+    (None, error) when no face is found or the recognizer is unavailable.
+    """
+    if not url or query_feat is None:
         return None, "no url or query"
     try:
         r = requests.get(
@@ -125,32 +131,16 @@ def _score_thumbnail(url: str, query_hash: str) -> tuple:
         )
         if r.status_code >= 400:
             return None, f"HTTP {r.status_code}"
-        ct = (r.headers.get("content-type") or "").lower()
-        # accept if starts with image OR if data decodes to image
-        if not ct.startswith("image/"):
-            # try to decode anyway
-            arr = np.frombuffer(r.content, dtype=np.uint8)
-            if arr.size == 0:
-                return None, "empty"
-            test = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
-            if test is None:
-                return None, "not image"
-        else:
-            arr = np.frombuffer(r.content, dtype=np.uint8)
-        if arr.size == 0:
-            return None, "empty"
-        if arr.size > 5 * 1024 * 1024:
-            return None, "too large"
-        # decode in-memory (no /tmp file, no race)
-        img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
+        arr = np.frombuffer(r.content, dtype=np.uint8)
+        if arr.size == 0 or arr.size > 5 * 1024 * 1024:
+            return None, "empty or too large"
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None or img.size == 0:
             return None, "decode fail"
-        small = cv2.resize(img, (8, 8), interpolation=cv2.INTER_AREA)
-        m = small.mean()
-        bits = (small > m).flatten().astype(np.uint8)
-        packed = int(np.packbits(bits).tobytes().hex(), 16)
-        thash = f"{packed:016x}"
-        return _hamming(query_hash, thash), None
+        feat, _why = face_embedding(img)
+        if feat is None:
+            return None, "no_face"
+        return embedding_similarity(query_feat, feat), None
     except Exception as e:
         return None, str(e)[:40]
 
@@ -160,9 +150,9 @@ def reverse_image_search(
     original_path=None,
     api_key: str | None = None,
     prefer_source: str = "reddit",
-    max_thumb_score: int = 12,
+    min_face_similarity: float = 36.3,  # SFace cosine threshold for same person
 ) -> dict:
-    """Live only. Re-ranks Lens hits by face pHash on thumbnails (parallel)."""
+    """Live only. Re-ranks Lens hits by SFace face-embedding similarity (parallel)."""
     image_path = Path(image_path)
     api_key = api_key or os.getenv("SERPAPI_API_KEY") or ""
     if not api_key:
@@ -174,6 +164,7 @@ def reverse_image_search(
         raise FileNotFoundError(f"image not found: {image_path}")
 
     query_hash = _phash(image_path)
+    query_feat, embed_method = face_embedding(image_path)
     hits, raws = _fetch_hits(image_path, api_key)
     sparse_first_pass = (len(hits) < 8)
 
@@ -199,38 +190,36 @@ def reverse_image_search(
             "Try a face that is posted publicly (IG/X/Reddit). Private faces have no web hits by design."
         )
 
-    # Score thumbnails in parallel to avoid serial 4s timeouts
+    # Score candidate faces in parallel with real face embeddings (SFace).
     from concurrent.futures import ThreadPoolExecutor
-    scored = [None] * len(hits)
+    sims = [None] * len(hits)
     with ThreadPoolExecutor(max_workers=8) as ex:
-        futures = {ex.submit(_score_thumbnail, h.get("thumbnail") or "", query_hash): i for i, h in enumerate(hits)}
+        futures = {ex.submit(_score_thumbnail_face, h.get("thumbnail") or "", query_feat): i for i, h in enumerate(hits)}
         for fut, i in futures.items():
             try:
-                d, _err = fut.result(timeout=10)
+                s, _err = fut.result(timeout=15)
             except Exception:
-                d = None
-            scored[i] = d
+                s = None
+            sims[i] = s
 
-    for h, d in zip(hits, scored):
-        h["_face_distance"] = d
+    for h, s in zip(hits, sims):
+        h["_face_sim"] = s
 
     prefer = (prefer_source or "reddit").lower()
     def rank(h):
-        # Lower is better. face_distance None -> 40 (middle), reddit -15, IG/X/etc 0
-        boost = -15 if (h.get("source") or "").lower() == prefer else 0
-        # also check displayed_link for reddit
+        # Primary: face-embedding similarity (higher = better match).
+        # Secondary: reddit preference; tertiary: original Lens position.
+        s = h.get("_face_sim")
+        sim_key = -(s if s is not None else -1)
+        boost = -10 if (h.get("source") or "").lower() == prefer else 0
         if prefer == "reddit":
             dl = (h.get("displayed_link") or h.get("link") or "").lower()
             if "reddit.com" in dl:
-                boost = -15
-        d = h.get("_face_distance")
-        if d is None:
-            return (40 + boost, h.get("position", 999))
-        return (d + boost, h.get("position", 999))
+                boost = -10
+        return (sim_key, boost, h.get("position", 999))
 
     vm_sorted = sorted(hits, key=rank)
-    # threshold: <=max_thumb_score face-similar, fallback to all if none
-    face_similar = [h for h in vm_sorted if h.get("_face_distance") is not None and h["_face_distance"] <= max_thumb_score]
+    face_similar = [h for h in vm_sorted if (h.get("_face_sim") or 0) >= min_face_similarity]
     use = face_similar if face_similar else vm_sorted
     top = use[0] if use else vm_sorted[0]
 
@@ -242,6 +231,7 @@ def reverse_image_search(
     combined_raw = {
         "sources": [{"engine": k, "raw": r} for k, r in raws],
         "query_phash": query_hash,
+        "embed_method": embed_method,
         "face_similar_count": len(face_similar),
         "total_hits": len(hits),
     }

@@ -57,8 +57,8 @@ def run_pipeline(
         )
     if verbose:
         print(f"  → mode={search['mode']} hits={len(vm)} (face-similar {search.get('face_similar_count')}/{len(search.get('all_hits', []))}) reddit_found={search.get('reddit_found')}")
-        dist = top.get("_face_distance", "?")
-        print(f"  → top: [{top.get('source')}] face_dist={dist} {top.get('title', '')[:80]} → {top.get('link')}")
+        dist = top.get("_face_sim")
+        print(f"  → top: [{top.get('source')}] face_sim={dist if dist is not None else 'n/a'}% {top.get('title', '')[:80]} → {top.get('link')}")
         if search.get("face_similar_count", 0) == 0:
             print("  ⚠ No face-similar hits — this face has no public copy. Showing closest visual only.")
 

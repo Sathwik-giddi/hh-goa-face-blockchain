@@ -125,6 +125,33 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
         if contract_address:
             # Contract path: FaceAnchor.anchor(bytes32,string) — event + mapping,
             # verifiable trustlessly by anyone via the contract's verify() view.
+            # Pre-check anchoredAt: the contract reverts on duplicates, so skip
+            # the tx entirely and return a dedupe receipt.
+            check_abi = [{
+                "inputs": [{"internalType": "bytes32", "name": "fingerprint", "type": "bytes32"}],
+                "name": "anchoredAt",
+                "outputs": [{"internalType": "uint64", "name": "", "type": "uint64"}],
+                "stateMutability": "view", "type": "function",
+            }]
+            c_check = w3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=check_abi)
+            existing_ts = c_check.functions.anchoredAt(bytes.fromhex(fingerprint)).call()
+            if existing_ts:
+                base = {
+                    "mode": "evm", "via": "contract", "deduplicated": True,
+                    "contractAddress": contract_address,
+                    "anchoredAt": int(existing_ts),
+                    "explorerUrl": f"https://amoy.polygonscan.com/address/{contract_address}",
+                    "data_hex": "0x" + fingerprint, "from": acct.address,
+                }
+                if chain_file is not None:
+                    try:
+                        from .blockchain_local import anchor_local
+                        local_receipt = anchor_local(fingerprint, {"mode": "evm", "deduplicated": True}, chain_file=chain_file)
+                        base["local_block"] = local_receipt.get("block_index")
+                        base["local_block_hash"] = local_receipt.get("block_hash")
+                    except Exception as e:
+                        print(f"[blockchain_evm] local mirror failed (non-fatal): {e}")
+                return base
             abi = [{
                 "inputs": [
                     {"internalType": "bytes32", "name": "fingerprint", "type": "bytes32"},

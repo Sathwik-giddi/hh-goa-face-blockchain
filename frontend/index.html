@@ -262,8 +262,7 @@ scanBtn.addEventListener('click', async()=>{
     socialBox.appendChild(el('div',{class:'text-warn text-sm fade-in', text:'No matching public post found. Try a face posted publicly (Reddit, X, Instagram).'}));
   } else {
     const top = s.top;
-    const faceDist = top._face_distance == null ? null : top._face_distance;
-    const sim = faceDist != null ? Math.max(0, Math.round((1 - faceDist / 64) * 100)) : null;
+    const sim = top._face_sim != null ? top._face_sim : null;
     const head = el('div',{class:'fade-in'});
     head.appendChild(el('div',{class:'text-ink font-medium'},[
       document.createTextNode('Best match — '),

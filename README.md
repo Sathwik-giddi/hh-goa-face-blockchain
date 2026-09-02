@@ -20,7 +20,7 @@ All live on your Mac for **$0**. No faucet purchase, no card. Spec-allowed `loca
 ## What it does (live, no mock)
 
 1. **Face:** `src/face_id.py:detect_and_encode` — OpenCV YuNet DNN (handles 3-quarter / side profile / glasses / occlusion, M1 native, ~230KB auto-downloaded), fallback Haar, optional DeepFace. Saves `outputs/face_crop.jpg` with 20% pad. Real 64-bit pHash (DCT-free, mean threshold, packed via `np.packbits` so Hamming distance is meaningful).
-2. **Search:** `src/search.py:reverse_image_search` — `POST serpapi.com/image → image_id → GET ?engine=google_lens` (two-step, no URL hosting). Plus `google_reverse_image` fallback + parallel `ThreadPoolExecutor` thumbnail scoring by 64-bit pHash Hamming distance, reported as a **face-match similarity %**. **Live only** — raises `RuntimeError` if `SERPAPI_API_KEY` missing. `prefer_source=reddit` ranking.
+2. **Search:** `src/search.py:reverse_image_search` — `POST serpapi.com/image → image_id → GET ?engine=google_lens` (two-step, no URL hosting). Plus `google_reverse_image` fallback. Re-ranking is **real face recognition**: every candidate thumbnail is face-detected (YuNet) and embedded with OpenCV **SFace** (128-D, same zoo as YuNet, ~37MB auto-downloaded), then ranked by cosine similarity to the query face — SFace's standard same-person threshold 0.363 = 36.3%. This matches the *person*, not the picture (pHash is kept only as a fingerprint input). **Live only** — raises `RuntimeError` if `SERPAPI_API_KEY` missing. `prefer_source=reddit` tiebreak.
 3. **Blockchain:**
    * `src/blockchain_evm.py` — Polygon Amoy, **two anchoring paths**:
      * **FaceAnchor contract** (default when `EVM_CONTRACT_ADDRESS` set): emits an `Anchored(bytes32 indexed, address, uint64, string)` event and stores the fingerprint in a public mapping. Anyone can verify via `verify(bytes32)` read on Polygonscan — **trustless, no dependency on our server or mirror files**.
@@ -102,6 +102,7 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 
 ## Limitations (honest, judges reward this)
 
+* SFace re-ranking needs a detectable face in each candidate thumbnail — tiny/occluded thumbnails score `n/a` and fall back to Lens position order.
 * YuNet handles 3-quarter / side profile / glasses well; extreme profile (≥75°) fails — `pip install deepface` for ArcFace.
 * Single face: picks largest. Multi-face shows `num_faces`.
 * Lens needs public index: private IG/Reddit/Discord → `NO_MATCH` (correct, by design).

@@ -1,8 +1,10 @@
 {
   "mode": "evm",
-  "txHash": "7b8372b56e7acaddf4cb5850727d56ae7b7f8d65d3f2d12545013ab9815f75ff",
-  "blockNumber": 46465249,
-  "explorerUrl": "https://amoy.polygonscan.com/tx/7b8372b56e7acaddf4cb5850727d56ae7b7f8d65d3f2d12545013ab9815f75ff",
-  "data_hex": "0xe84edc95b30264fbbc2ca3b5835b7328ffda0427f8182527c5edaa4478130cd1",
-  "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb"
+  "txHash": "e04b5df86696e32e60e1e7b5aa6733b1bd2e41347a47cf845a0443d401055efe",
+  "blockNumber": 46540542,
+  "explorerUrl": "https://amoy.polygonscan.com/tx/e04b5df86696e32e60e1e7b5aa6733b1bd2e41347a47cf845a0443d401055efe",
+  "data_hex": "0x16a2b2e91603d547b28aaed8ee5bd29c8c79ffa38d6f49f159966c14d00364cc",
+  "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+  "local_block": 6,
+  "local_block_hash": "125be3994f62abae7e58bf9a8d9043847c1762a2e5d65ed9f6c6cc39907607c9"
 }

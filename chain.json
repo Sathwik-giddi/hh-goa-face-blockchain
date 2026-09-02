@@ -696,5 +696,48 @@
       "face_similar_count": 55
     },
     "hash": "f3e5c7c598bed45866a4c690da448dcdc08d9c1b8f132449e2fef1aee11411c7"
+  },
+  {
+    "index": 17,
+    "timestamp": "2026-09-02T18:25:30.678360+00:00",
+    "prev_hash": "f3e5c7c598bed45866a4c690da448dcdc08d9c1b8f132449e2fef1aee11411c7",
+    "data_hash": "bf01b1ec16474ef80d4318040feb0bdc7ed0252b098e620e5bc32e10d74067bf",
+    "data": {
+      "fingerprint": "7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c732817",
+      "mode": "evm",
+      "txHash": "0x4c18572fd529760e75778185d77cfd09cd3619d4bbd4285f39248747e0ba9ced",
+      "blockNumber": 46555089,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x4c18572fd529760e75778185d77cfd09cd3619d4bbd4285f39248747e0ba9ced",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 40,
+        "title": "Healthy Vegan Diets Linked to 'Healthier' Aging for Women ...",
+        "link": "https://www.livekindly.com/healthy-vegan-diets-healthier-aging-women/",
+        "source": "livekindly",
+        "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcR4xDUeXR3ffjThNHPHseSn_O7N0fmmt9Qci5xOGSvaJVfDYpJe26hB9pabhNE1A4dLN59wXhUWKcGlibG5ELoMdNkYjbwGCvyBv2TEGOA-s4me7jYmzgI",
+        "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSL44oYmvhgVfiGjPXiccVb-tbW2OotV-y1Vt2naswMJWQfsnCU",
+        "thumbnail_width": 168,
+        "thumbnail_height": 300,
+        "image": "https://www.livekindly.com/wp-content/uploads/2018/09/black-woman-2-1024x576.jpg",
+        "image_width": 576,
+        "image_height": 1024,
+        "_face_sim": 89.5
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.9040992259979248,
+        "bbox": [
+          316,
+          226,
+          394,
+          497
+        ],
+        "embedding_hash": "337b68f87810808e"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 8
+    },
+    "hash": "efcabb6878c2c581f72922f2066bbfb5da4c010057141725721b9e2fc23777cf"
   }
 ]

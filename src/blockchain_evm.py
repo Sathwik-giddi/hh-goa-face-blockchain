@@ -162,20 +162,39 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
             c = w3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=abi)
             # §8: store the source reference on-chain (off-chain evidence pointer)
             cid = (payload or {}).get("post", {}).get("link", "") or ""
-            data_hex = c.encode_abi("anchor", [bytes.fromhex(fingerprint), cid])
+            call_args = [bytes.fromhex(fingerprint), cid]
+            data_hex = c.encode_abi("anchor", call_args)
+            tx_to = Web3.to_checksum_address(contract_address)
+            try:
+                gas = min(int(c.functions.anchor(*call_args).estimate_gas({"from": acct.address}) * 1.25) + 10_000, 500_000)
+            except Exception:
+                gas = 400_000
         else:
             data_hex = "0x" + fingerprint
-        # Use current base_fee * 2 + priority for safety on Amoy
-        try:
-            base_fee = w3.eth.get_block("latest").get("baseFeePerGas", 0)
-        except Exception:
-            base_fee = 0
-        max_fee = max(w3.to_wei(60, "gwei"), int(base_fee * 2) + w3.to_wei(30, "gwei"))
-        max_priority = w3.to_wei(30, "gwei")
+            tx_to = acct.address
+            gas = 50_000
+
+        # Fee at market (Amoy baseFee ≈ 0; node gas_price ≈ 30-40 gwei) + funds
+        # pre-check with an actionable message instead of a raw RPC error dump.
+        market = w3.eth.gas_price
+        max_fee = max(market, w3.to_wei(35, "gwei"))
+        max_priority = min(w3.to_wei(25, "gwei"), max_fee)
+        balance = w3.eth.get_balance(acct.address)
+        need = gas * max_fee
+        if balance < need:
+            return {
+                "mode": "evm",
+                "error": (f"wallet balance {Web3.from_wei(balance, 'ether')} POL is below the estimated "
+                          f"tx cost {Web3.from_wei(need, 'ether')} POL. Top up free at "
+                          f"https://faucet.polygon.technology/ (Amoy, 0.2 POL per 24h), or set "
+                          f"BLOCKCHAIN_MODE=local to anchor offline."),
+                "verified": False,
+            }
+        nonce = w3.eth.get_transaction_count(acct.address)
         tx = {
-            "to": contract_address and Web3.to_checksum_address(contract_address) or acct.address,
+            "to": tx_to,
             "value": 0, "data": data_hex, "nonce": nonce,
-            "gas": 400000 if contract_address else 50000, "chainId": chain_id,
+            "gas": gas, "chainId": chain_id,
             "maxFeePerGas": max_fee,
             "maxPriorityFeePerGas": max_priority,
         }

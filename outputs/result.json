@@ -2,25 +2,25 @@
   "face": {
     "engine": "opencv:yunet",
     "bbox": [
-      207,
-      182,
-      145,
-      206
+      316,
+      226,
+      394,
+      497
     ],
-    "conf": 0.9089785814285278,
+    "conf": 0.9040992259979248,
     "num_faces": 1,
     "selected_index": 0,
     "crop_path": "outputs/face_crop.jpg",
-    "embedding_hash": "ff0f1e2c3c3c181e",
+    "embedding_hash": "337b68f87810808e",
     "all_faces": [
       {
         "bbox": [
-          207,
-          182,
-          145,
-          206
+          316,
+          226,
+          394,
+          497
         ],
-        "conf": 0.9089785814285278,
+        "conf": 0.9040992259979248,
         "engine": "opencv:yunet"
       }
     ],
@@ -28,12 +28,12 @@
       {
         "index": 0,
         "bbox": [
-          207,
-          182,
-          145,
-          206
+          316,
+          226,
+          394,
+          497
         ],
-        "conf": 0.909,
+        "conf": 0.904,
         "crop_path": "outputs/face_crop_0.jpg"
       }
     ]
@@ -42,42 +42,42 @@
     "mode": "live",
     "reddit_found": true,
     "top_match": {
-      "position": 45,
-      "title": "Image processing with Python, NumPy | note.nkmk.me",
-      "link": "https://note.nkmk.me/en/python-numpy-image-processing/",
-      "source": "nkmk note - nkmk.me",
-      "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcR6eVZlxUIUBbiKHHpgbQPAgOAmv-kt02vxx1_wtpVByEpu8HM7DR-pIgRK8VasVHhPGMJ4hDOjZhRRaI6of9pDClmagwBZ8piWD75EX_1mKfM",
-      "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVM7S7cmwbcziNiocHOKXBA8GOx3a3ewF3QNOq6cUoKqPX5AVs",
-      "thumbnail_width": 225,
-      "thumbnail_height": 225,
-      "image": "https://raw.githubusercontent.com/nkmk/python-snippets/a0d39dd5cef8e5ef65444056088e888af5d32bf6/notebook/data/dst/lena_numpy_trim.jpg",
-      "image_width": 256,
-      "image_height": 256,
-      "_face_sim": 94.0
+      "position": 40,
+      "title": "Healthy Vegan Diets Linked to 'Healthier' Aging for Women ...",
+      "link": "https://www.livekindly.com/healthy-vegan-diets-healthier-aging-women/",
+      "source": "livekindly",
+      "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcR4xDUeXR3ffjThNHPHseSn_O7N0fmmt9Qci5xOGSvaJVfDYpJe26hB9pabhNE1A4dLN59wXhUWKcGlibG5ELoMdNkYjbwGCvyBv2TEGOA-s4me7jYmzgI",
+      "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSL44oYmvhgVfiGjPXiccVb-tbW2OotV-y1Vt2naswMJWQfsnCU",
+      "thumbnail_width": 168,
+      "thumbnail_height": 300,
+      "image": "https://www.livekindly.com/wp-content/uploads/2018/09/black-woman-2-1024x576.jpg",
+      "image_width": 576,
+      "image_height": 1024,
+      "_face_sim": 89.5
     },
-    "num_hits": 55,
-    "face_similar_count": 55
+    "num_hits": 8,
+    "face_similar_count": 8
   },
   "fingerprint": {
-    "url": "https://note.nkmk.me/en/python-numpy-image-processing/",
-    "title": "Image processing with Python, NumPy | note.nkmk.me",
-    "source": "nkmk note - nkmk.me",
-    "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVM7S7cmwbcziNiocHOKXBA8GOx3a3ewF3QNOq6cUoKqPX5AVs",
-    "image_sha256": "9bac6045f38fb76042d5029ca6987117cbb05c6ce2e33d74f4f5e368a81a24c9",
-    "fingerprint_sha256": "a810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5",
-    "created_at": "2026-09-02T18:01:47.438833+00:00"
+    "url": "https://www.livekindly.com/healthy-vegan-diets-healthier-aging-women/",
+    "title": "Healthy Vegan Diets Linked to 'Healthier' Aging for Women ...",
+    "source": "livekindly",
+    "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSL44oYmvhgVfiGjPXiccVb-tbW2OotV-y1Vt2naswMJWQfsnCU",
+    "image_sha256": "38376ea91d459e92da2846a89f0a69916e578343c86a1b11d85b4139a2fab3a9",
+    "fingerprint_sha256": "7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c732817",
+    "created_at": "2026-09-02T18:25:25.960546+00:00"
   },
   "receipt": {
     "mode": "evm",
-    "txHash": "0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
-    "blockNumber": 46553670,
-    "explorerUrl": "https://amoy.polygonscan.com/tx/0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
-    "data_hex": "0x1a8512eaa810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f50000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000003668747470733a2f2f6e6f74652e6e6b6d6b2e6d652f656e2f707974686f6e2d6e756d70792d696d6167652d70726f63657373696e672f00000000000000000000",
+    "txHash": "0x4c18572fd529760e75778185d77cfd09cd3619d4bbd4285f39248747e0ba9ced",
+    "blockNumber": 46555089,
+    "explorerUrl": "https://amoy.polygonscan.com/tx/0x4c18572fd529760e75778185d77cfd09cd3619d4bbd4285f39248747e0ba9ced",
+    "data_hex": "0x1a8512ea7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c7328170000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000004568747470733a2f2f7777772e6c6976656b696e646c792e636f6d2f6865616c7468792d766567616e2d64696574732d6865616c74686965722d6167696e672d776f6d656e2f000000000000000000000000000000000000000000000000000000",
     "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
     "via": "contract",
     "contractAddress": "0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463",
-    "local_block": 16,
-    "local_block_hash": "f3e5c7c598bed45866a4c690da448dcdc08d9c1b8f132449e2fef1aee11411c7"
+    "local_block": 17,
+    "local_block_hash": "efcabb6878c2c581f72922f2066bbfb5da4c010057141725721b9e2fc23777cf"
   },
   "verify": {
     "verified": true,
@@ -86,36 +86,36 @@
         "verified": true,
         "via": "contract",
         "contractAddress": "0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463",
-        "anchoredAt": 1788372112,
+        "anchoredAt": 1788373531,
         "explorerUrl": "https://amoy.polygonscan.com/address/0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463#readContract"
       },
       {
         "verified": true,
-        "txHash": "0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
-        "blockNumber": 46553670,
-        "explorerUrl": "https://amoy.polygonscan.com/tx/0xacaf499d478bafb54780cba06d36224f8e77b85d4f694813e1fb16e40f7a9638",
-        "on_chain_input": "0x1a8512eaa810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f50000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000003668747470733a2f2f6e6f74652e6e6b6d6b2e6d652f656e2f707974686f6e2d6e756d70792d696d6167652d70726f63657373696e672f00000000000000000000",
-        "expected_input": "0xa810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5"
+        "txHash": "0x4c18572fd529760e75778185d77cfd09cd3619d4bbd4285f39248747e0ba9ced",
+        "blockNumber": 46555089,
+        "explorerUrl": "https://amoy.polygonscan.com/tx/0x4c18572fd529760e75778185d77cfd09cd3619d4bbd4285f39248747e0ba9ced",
+        "on_chain_input": "0x1a8512ea7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c7328170000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000004568747470733a2f2f7777772e6c6976656b696e646c792e636f6d2f6865616c7468792d766567616e2d64696574732d6865616c74686965722d6167696e672d776f6d656e2f000000000000000000000000000000000000000000000000000000",
+        "expected_input": "0x7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c732817"
       }
     ],
     "local_block": {
-      "block_index": 16,
-      "block_hash": "f3e5c7c598bed45866a4c690da448dcdc08d9c1b8f132449e2fef1aee11411c7",
-      "timestamp": "2026-09-02T18:01:51.711974+00:00"
+      "block_index": 17,
+      "block_hash": "efcabb6878c2c581f72922f2066bbfb5da4c010057141725721b9e2fc23777cf",
+      "timestamp": "2026-09-02T18:25:30.678360+00:00"
     }
   },
   "reverify": {
     "method": "re-retrieve + re-canonicalize + re-hash",
     "re_downloaded_image": true,
-    "recomputed_fingerprint": "a810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5",
-    "stored_fingerprint": "a810ae49ca9d57ad0c791714b12ba389cf908c1d32bbff50220119e32d5613f5",
+    "recomputed_fingerprint": "7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c732817",
+    "stored_fingerprint": "7d3e0cbf55d48dab8e5d8893381e0c2d0d65e72bd3ff68c3a861a1ea0c732817",
     "match": true,
     "components": {
-      "url": "https://note.nkmk.me/en/python-numpy-image-processing/",
-      "title": "Image processing with Python, NumPy | note.nkmk.me",
-      "source": "nkmk note - nkmk.me",
-      "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVM7S7cmwbcziNiocHOKXBA8GOx3a3ewF3QNOq6cUoKqPX5AVs",
-      "image_sha256": "9bac6045f38fb76042d5029ca6987117cbb05c6ce2e33d74f4f5e368a81a24c9"
+      "url": "https://www.livekindly.com/healthy-vegan-diets-healthier-aging-women/",
+      "title": "Healthy Vegan Diets Linked to 'Healthier' Aging for Women ...",
+      "source": "livekindly",
+      "thumbnail": "https://encrypted-tbn2.gstatic.com/images?q=tbn:ANd9GcSL44oYmvhgVfiGjPXiccVb-tbW2OotV-y1Vt2naswMJWQfsnCU",
+      "image_sha256": "38376ea91d459e92da2846a89f0a69916e578343c86a1b11d85b4139a2fab3a9"
     }
   }
 }

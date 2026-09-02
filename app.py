@@ -210,6 +210,7 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
                 "reddit_found": search.get("reddit_found"),
                 "num_hits": len(vm),
                 "face_similar_count": search.get("face_similar_count"),
+                "num_queries": search.get("num_queries", 1),
                 "confident": confident,
                 "top": top,
                 "hits": vm[:8],

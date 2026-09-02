@@ -59,7 +59,7 @@ def run_pipeline(
             "Try a face that is posted publicly (IG/X/Reddit)."
         )
     if verbose:
-        print(f"  ✓ mode={search['mode']} hits={len(search.get('all_hits', []))} (face-embedded {search.get('face_similar_count')}) reddit_found={search.get('reddit_found')}")
+        print(f"  ✓ mode={search['mode']} queries={search.get('num_queries', 1)} hits={len(search.get('all_hits', []))} (face-embedded {search.get('face_similar_count')}) reddit_found={search.get('reddit_found')}")
         print(f"[4/8] MATCH")
         sim = top.get("_face_sim")
         print(f"  ✓ [{top.get('source')}] face_sim={sim if sim is not None else 'n/a'}% {top.get('title', '')[:80]}")

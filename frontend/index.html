@@ -549,6 +549,7 @@ function render(j){
   mb.appendChild(head);
   if(top.title) mb.appendChild(el('div',{class:'text-slate mt-1',text:top.title}));
   if(top.link) mb.appendChild(el('div',{class:'mt-1.5 text-[13px]'},[link('open the discovered post ↗',top.link)]));
+  mb.appendChild(el('div',{class:'text-[11px] font-mono text-slate mt-2', text:(s.num_queries||1)+' live queries · '+s.num_hits+' candidates · '+(s.face_similar_count||0)+' face-embedded'}));
   if(sim!=null){
     const meterWrap=el('div',{class:'mt-4 max-w-[420px]'});
     meterWrap.appendChild(el('div',{class:'flex justify-between text-[11px] font-mono text-slate mb-1.5'},[

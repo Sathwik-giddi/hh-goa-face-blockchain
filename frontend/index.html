@@ -383,6 +383,7 @@ async function runScan(faceIndex){
   if(!fileInput.files[0]){ setText(status,'Select an image first'); status.className='mt-2.5 text-xs font-mono text-bad'; return; }
   scanBtn.disabled=true;
   facePick.classList.add('hidden');
+  results.classList.add('hidden');   // previous scan's evidence must not linger
   initLedger();
   setStageActive('Input scan','reading image…');
   setText(status,'[1/8] decoding input…'); status.className='mt-2.5 text-xs font-mono text-slate';
@@ -403,6 +404,7 @@ async function runScan(faceIndex){
   clearTimeout(tFace); clearTimeout(t1); clearTimeout(t2);
   if(!resp.ok){
     const msg=(j&&(j.detail||j.error))||resp.statusText||('HTTP '+resp.status);
+    stampLedger('Input scan','',now());
     setStageFailed(resp.status===422?'Face capture':(resp.status===404?'Source located':'On-chain record'));
     setText(status,'✗ '+msg); status.className='mt-2.5 text-xs font-mono text-bad';
     scanBtn.disabled=false; return;

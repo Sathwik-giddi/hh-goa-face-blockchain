@@ -9,6 +9,13 @@ import numpy as np
 import cv2
 from PIL import Image
 
+# iPhone HEIC support — Pillow can't read HEIF natively; register if available.
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass
+
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()

@@ -154,32 +154,51 @@ function showPreview(f){
 
 scanBtn.addEventListener('click', async()=>{
   if(!file.files[0]){ status.textContent='Pick an image first'; return; }
-  scanBtn.disabled=true; status.textContent='[1/4] Detecting face...';
+  scanBtn.disabled=true;
+  status.textContent='[1/4] Detecting face... (YuNet)';
+  status.className='mt-2 text-xs font-mono text-cyan-300';
   const fd=new FormData(); fd.append('file', file.files[0]);
+  // progressive status updates
+  const t1=setTimeout(()=>{ if(scanBtn.disabled){ status.textContent='[2/4] Searching Reddit / X / IG / TikTok via Google Lens... (8-15s)'; }}, 2500);
+  const t2=setTimeout(()=>{ if(scanBtn.disabled){ status.textContent='[3/4] Anchoring fingerprint on Polygon Amoy...'; }}, 12000);
   try{
     const r=await fetch('/api/scan',{method:'POST', body:fd});
-    const j=await r.json();
-    if(!r.ok){ status.textContent='✗ '+(j.detail||r.statusText); status.className='mt-2 text-xs font-mono text-red-400'; scanBtn.disabled=false; return; }
+    clearTimeout(t1); clearTimeout(t2);
+    let j;
+    try { j=await r.json(); } catch(_){ j={detail:'non-JSON response'}; }
+    if(!r.ok){
+      status.textContent='✗ HTTP '+r.status+' — '+(j.detail||j.error||r.statusText);
+      status.className='mt-2 text-xs font-mono text-red-400';
+      scanBtn.disabled=false;
+      return;
+    }
     // face
     const f=j.face; faceBox.innerHTML=`<div class="text-white">Engine <span class="font-mono text-xs">${f.engine}</span> · faces ${f.num_faces} · conf ${Number(f.conf).toFixed(2)}</div><div class="text-xs text-white/40 mt-1">bbox ${f.bbox?f.bbox.join(','):'—'} · pHash ${f.embedding_hash}</div>`; faceMeta.textContent=`crop: ${f.crop_path}`;
     if(f.crop_path) crop.src='/'+f.crop_path+'?t='+Date.now();
-    // social — now face-aware
+    if(f.warning) faceBox.innerHTML += `<div class="text-xs text-amber-400 mt-1">⚠ ${f.warning}</div>`;
+    // social
     const s=j.search; redditBadge.classList.toggle('hidden', !s.reddit_found);
-    const faceDist = s.top._face_distance ?? null;
-    const faceDistStr = faceDist!=null ? `face dist ${faceDist} (0=identical, <28 face-similar)` : 'no thumbnail face';
-    socialBox.innerHTML=`<div class="text-white">Top <span class="text-gold">${s.top.source}</span> — ${s.top.title.slice(0,80)}</div><a href="${s.top.link}" target="_blank" class="text-xs text-cyan hover:underline break-all">${s.top.link}</a><div class="text-xs text-white/40 mt-1">${faceDistStr} · hits ${s.num_hits} · mode ${s.mode}</div>`;
-    if(s.num_hits && s.hits[0]?._face_distance==null && s.num_hits>0) {
-      hits.innerHTML=`<div class="rounded border border-amber-500/20 bg-amber-500/10 p-2 text-xs">⚠ This face has no public indexed copy — Lens returned mostly generic stock. Upload a face that is posted publicly (IG/X/Reddit) for exact match. Showing closest face-similar.</div>` + s.hits.map(h=>`<div class="rounded border border-line bg-ink/60 p-2 flex gap-2"><img src="${h.thumbnail}" class="w-12 h-12 object-cover rounded"/> <div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${h.title.slice(0,64)}</div><div class="text-xs text-white/40">${h.source} · ${h._face_distance!=null?'face '+h._face_distance:'no face'}</div><a href="${h.link}" target="_blank" class="text-xs text-cyan">open</a></div></div>`).join('');
+    if(!s.top){
+      socialBox.innerHTML=`<div class="text-amber-300 text-sm">No matching post found. Try a face that's been posted publicly (IG/X/LinkedIn).</div>`;
+      hits.innerHTML='';
     } else {
-      hits.innerHTML=s.hits.map(h=>`<div class="rounded border border-line bg-ink/60 p-2 flex gap-2"><img src="${h.thumbnail}" class="w-12 h-12 object-cover rounded"/> <div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${h.title.slice(0,64)}</div><div class="text-xs text-white/40">${h.source} · face ${h._face_distance ?? '?'}</div><a href="${h.link}" target="_blank" class="text-xs text-cyan">open</a></div></div>`).join('');
+      const faceDist = s.top._face_distance ?? null;
+      const faceDistStr = faceDist!=null ? `face dist ${faceDist} (0=identical, <28 face-similar)` : 'no thumbnail face';
+      socialBox.innerHTML=`<div class="text-white">Top <span class="text-gold">${s.top.source}</span> — ${s.top.title.slice(0,80)}</div><a href="${s.top.link}" target="_blank" class="text-xs text-cyan hover:underline break-all">${s.top.link}</a><div class="text-xs text-white/40 mt-1">${faceDistStr} · hits ${s.num_hits} · face-similar ${s.face_similar_count} · mode ${s.mode}</div>`;
+      hits.innerHTML=s.hits.map(h=>`<div class="rounded border border-line bg-ink/60 p-2 flex gap-2"><img src="${h.thumbnail}" class="w-12 h-12 object-cover rounded" onerror="this.style.opacity=0.3"/> <div class="min-w-0 flex-1"><div class="text-xs font-semibold truncate">${(h.title||'').slice(0,64)}</div><div class="text-xs text-white/40">${h.source} · face ${h._face_distance ?? '?'}</div><a href="${h.link}" target="_blank" class="text-xs text-cyan">open</a></div></div>`).join('');
     }
     // chain
     const fp=j.fingerprint.fingerprint_sha256; lastFP=fp; verifyInput.value=fp; ticker.textContent=fp; chainBox.innerHTML=`<div class="font-mono text-xs break-all">${fp}</div><div class="text-xs text-white/40 mt-1">canonical SHA-256 of {url,title,source,thumb,image_sha256}</div>`;
-    const rc=j.receipt; receiptEl.innerHTML=rc.txHash ? `<div class="rounded border border-emerald-500/20 bg-emerald-500/10 p-2"><div class="text-xs font-semibold text-emerald-300">Anchored on Polygon Amoy</div><div class="font-mono text-xs break-all mt-1">${rc.txHash}</div><a href="${rc.explorerUrl}" target="_blank" class="text-xs text-cyan">↗ ${rc.explorerUrl}</a><div class="text-xs text-white/40">block ${rc.blockNumber} · Input Data == fingerprint ✓</div></div>` : `<div class="rounded border border-gold/20 bg-ink p-2"><div class="font-mono text-xs break-all">${rc.block_hash}</div><div class="text-xs text-white/40">local chain #${rc.block_index} · prev ${rc.prev_hash.slice(0,10)}…</div><a href="${rc.explorerUrl}" class="text-xs text-cyan">${rc.explorerUrl}</a></div>`;
-    if(rc.explorerUrl){ tickerLink.href=rc.explorerUrl; tickerLink.textContent=rc.txHash.slice(0,10)+'…'; }
-    status.textContent=`✓ Done — verified ${j.verify.verified ?? 'see explorer'} · tamper test flips last char → false`; status.className='mt-2 text-xs font-mono text-emerald-400';
+    const rc=j.receipt; receiptEl.innerHTML=rc.txHash ? `<div class="rounded border border-emerald-500/20 bg-emerald-500/10 p-2"><div class="text-xs font-semibold text-emerald-300">Anchored on Polygon Amoy</div><div class="font-mono text-xs break-all mt-1">${rc.txHash}</div><a href="${rc.explorerUrl}" target="_blank" class="text-xs text-cyan">↗ ${rc.explorerUrl}</a><div class="text-xs text-white/40">block ${rc.blockNumber} · Input Data == fingerprint ✓</div></div>` : (rc.error ? `<div class="rounded border border-red-500/20 bg-red-500/10 p-2 text-xs text-red-300">✗ Anchor failed: ${rc.error}</div>` : `<div class="rounded border border-gold/20 bg-ink p-2"><div class="font-mono text-xs break-all">${rc.block_hash}</div><div class="text-xs text-white/40">local chain #${rc.block_index} · prev ${rc.prev_hash.slice(0,10)}…</div><a href="${rc.explorerUrl}" class="text-xs text-cyan">${rc.explorerUrl}</a></div>`);
+    if(rc.explorerUrl && rc.txHash){ tickerLink.href=rc.explorerUrl; tickerLink.textContent=rc.txHash.slice(0,10)+'…'; }
+    status.textContent=`✓ Done — verified ${j.verify.verified ?? 'see explorer'} · tamper test flips last char → false`;
+    status.className='mt-2 text-xs font-mono text-emerald-400';
     healthCheck();
-  }catch(e){ status.textContent='✗ '+(e.message||e); status.className='mt-2 text-xs font-mono text-red-400'; }
+  }catch(e){
+    clearTimeout(t1); clearTimeout(t2);
+    status.textContent='✗ '+(e.message||e);
+    status.className='mt-2 text-xs font-mono text-red-400';
+  }
   scanBtn.disabled=false;
 });
 

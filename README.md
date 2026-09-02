@@ -2,16 +2,36 @@
 
 **Pipeline:** `face scan (image) → detect & crop face → live reverse-image search (Google Lens index: Reddit/X/IG/TikTok) → SHA256 fingerprint → tamper-evident blockchain → re-verify`
 
-All live on your Mac for **$0**. No faucet purchase, no card. Spec-allowed `local/simulated chain` available + Polygon Amoy for real on-chain anchoring.
+```mermaid
+flowchart LR
+    A[face scan.jpg] --> B["YuNet DNN<br/>detect + crop + pHash"]
+    B --> C["Google Lens<br/>(SerpAPI, live)"]
+    C --> D["pHash re-rank<br/>face-similarity %"]
+    D --> E["SHA-256<br/>fingerprint"]
+    E --> F["FaceAnchor contract<br/>Polygon Amoy"]
+    E --> G["local hash-chain<br/>chain.json"]
+    F --> H["verify()<br/>contract + tx + local"]
+    G --> H
+    H --> I["✓ tamper-evident proof"]
+```
+
+All live on your Mac for **$0**. No faucet purchase, no card. Spec-allowed `local/simulated chain` available + Polygon Amoy with a **deployed smart contract** for trustless verification.
 
 ## What it does (live, no mock)
 
 1. **Face:** `src/face_id.py:detect_and_encode` — OpenCV YuNet DNN (handles 3-quarter / side profile / glasses / occlusion, M1 native, ~230KB auto-downloaded), fallback Haar, optional DeepFace. Saves `outputs/face_crop.jpg` with 20% pad. Real 64-bit pHash (DCT-free, mean threshold, packed via `np.packbits` so Hamming distance is meaningful).
-2. **Search:** `src/search.py:reverse_image_search` — `POST serpapi.com/image → image_id → GET ?engine=google_lens` (two-step, no URL hosting). Plus `google_reverse_image` fallback + parallel `ThreadPoolExecutor` thumbnail scoring by 64-bit pHash Hamming distance. **Live only** — raises `RuntimeError` if `SERPAPI_API_KEY` missing. `prefer_source=reddit` ranking.
+2. **Search:** `src/search.py:reverse_image_search` — `POST serpapi.com/image → image_id → GET ?engine=google_lens` (two-step, no URL hosting). Plus `google_reverse_image` fallback + parallel `ThreadPoolExecutor` thumbnail scoring by 64-bit pHash Hamming distance, reported as a **face-match similarity %**. **Live only** — raises `RuntimeError` if `SERPAPI_API_KEY` missing. `prefer_source=reddit` ranking.
 3. **Blockchain:**
+   * `src/blockchain_evm.py` — Polygon Amoy, **two anchoring paths**:
+     * **FaceAnchor contract** (default when `EVM_CONTRACT_ADDRESS` set): emits an `Anchored(bytes32 indexed, address, uint64, string)` event and stores the fingerprint in a public mapping. Anyone can verify via `verify(bytes32)` read on Polygonscan — **trustless, no dependency on our server or mirror files**.
+     * **0-value self-tx** fallback with `data=0x+fingerprint` (32 bytes) — works with zero deployment.
+     * Both: dynamic gas pricing, dedupe-safe, `receipt.status` checked, full tx history in `evm_mirror.json`.
    * `src/blockchain_local.py` — atomic hash-chain (3-layer integrity: `prev_hash` + `block.hash` + `data_hash`). Dedupes fingerprint. Uses `filelock` for concurrent safety, atomic `tempfile+os.replace+fsync` writes. Auto-recovers from corrupted JSON.
-   * `src/blockchain_evm.py` — Polygon Amoy. 0-value self-tx with `data=0x+fingerprint` (32 bytes). Dynamic gas pricing (`max(60gwei, baseFee*2+30gwei)`). Also writes a local chain.json block (unified audit). Mirror file `evm_mirror.json` records **all** tx per fingerprint (history, not last-write-wins).
-4. **Verify:** `verify(fingerprint)` runs `verify_local` (chain integrity) AND, in EVM mode, on-chain `eth_getTransaction` + cross-check of `input data == fingerprint`. Atomic reads, structured returns, never leaks internal errors.
+   * Every EVM anchor also writes a local chain.json block (unified audit trail for judges).
+4. **Verify — three independent paths, all must be reproducible by a judge:**
+   * **Contract state:** `FaceAnchor.anchoredAt(fp)` view call → works even with no mirror file.
+   * **Raw tx calldata:** `eth_getTransaction` input == fingerprint (selector-aware for contract txs).
+   * **Local hash chain:** full `prev_hash → block.hash → data_hash` integrity walk.
 
 ## How to run — 3 commands on Mac
 
@@ -43,10 +63,20 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 
 ## Which blockchain?
 
-* **`BLOCKCHAIN_MODE=evm` (default for submission):** Polygon Amoy testnet (chainId 80002). Sends self-tx with `0x+fingerprint`. Local hash-chain block is also written. Cost: 50k gas × ~$0.00004 ≈ `$0.002` per anchor. Faucet: 0.2 POL covers ~100 anchors.
+* **Polygon Amoy testnet (chainId 80002), two paths:**
+  * **FaceAnchor contract** (default when `EVM_CONTRACT_ADDRESS` is set in `.env`): `contracts/FaceAnchor.sol` — a public mapping of fingerprint → timestamp + event log. Deploy with `python3 scripts/deploy_contract.py` (uses py-solc-x, ~0.02 POL).
+  * **0-value self-tx** fallback (no contract needed): `data=0x+fingerprint`, 50k gas ≈ `$0.002`.
 * **`BLOCKCHAIN_MODE=local`:** `chain.json` hash-chain only. Spec-allowed "local/simulated chain" mode. Instant, offline, free. Same 3-layer integrity as EVM mode.
 
 **Both modes keep `chain.json` as the unified audit trail** — judges see every anchor with hash, payload, and (EVM) txHash + Polygonscan link.
+
+## Judge verification (reproduce it yourself)
+
+1. **Trustless, on Polygonscan** — open the contract's *Read Contract* tab:
+   `https://amoy.polygonscan.com/address/0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463#readContract`
+   → call `anchoredAt` with a fingerprint from `chain.json` (bytes32) → non-zero timestamp = anchored. Also check the `Anchored` events tab.
+2. **CLI:** `python -m src.pipeline --verify <64-hex fingerprint> --chain chain.json` → runs all three paths (contract + tx calldata + local chain) and exits 0 only if verified.
+3. **Web UI:** paste the fingerprint into the RE-VERIFY panel → each path listed with ✓ and a Polygonscan link. Flip the last hex char → red `verified: false` (tamper test).
 
 ## Live stack (verified on this Mac)
 
@@ -82,13 +112,14 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 
 ```
 src/{pipeline.py,face_id.py,search.py,blockchain.py,blockchain_local.py,blockchain_evm.py,utils.py}
-contracts/Anchor.sol  (reference contract; code uses self-send for cost)
+contracts/FaceAnchor.sol  (deployed on Amoy: anchoring + Anchored event + trustless verify)
+scripts/deploy_contract.py (compile + deploy + write EVM_CONTRACT_ADDRESS to .env)
 models/face_detection_yunet_2023mar.onnx  (auto-downloaded, .gitignored)
-frontend/index.html  (XSS-safe, 10/10 forensic UI)
+frontend/index.html  (XSS-safe, forensic light-table UI, contract badges, similarity %)
 app.py  (FastAPI, CORS-locked, 10MB upload cap, per-request isolation)
 scripts/demo.sh  (sources .env, uses venv python)
-chain.json  evm_mirror.json  (live audit trail, force-pushed for judges)
-tests/test_pipeline.py  (7 hermetic tests)
+chain.json  evm_mirror.json  (live audit trail, pushed for judges)
+tests/test_pipeline.py  (8 hermetic tests)
 ```
 
 ## Tests

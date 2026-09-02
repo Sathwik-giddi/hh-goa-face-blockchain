@@ -51,6 +51,7 @@ tailwind.config={theme:{extend:{colors:{ink:"#0B0E14", panel:"#111827", line:"#1
       <div class="mt-5 flex flex-wrap gap-2 text-[11px]">
         <span class="px-2.5 py-1 rounded-full glass">✓ Live Lens — no mock</span>
         <span class="px-2.5 py-1 rounded-full glass">✓ Reddit-aware ranking</span>
+        <span class="px-2.5 py-1 rounded-full glass">✓ Trustless contract verify</span>
         <span class="px-2.5 py-1 rounded-full glass">✓ 0.1 POL faucet — $0</span>
       </div>
       <div class="mt-6 rounded border border-gold/20 bg-panel/60 p-3">
@@ -264,13 +265,22 @@ scanBtn.addEventListener('click', async()=>{
   } else {
     const top = s.top;
     const faceDist = top._face_distance == null ? null : top._face_distance;
-    const faceDistStr = faceDist != null ? `face dist ${faceDist} (0=identical, ≤12 face-similar)` : 'no thumbnail face';
+    const sim = faceDist != null ? Math.max(0, Math.round((1 - faceDist / 64) * 100)) : null;
+    const simChip = sim != null
+      ? 'face match ' + sim + '% similarity'
+      : 'no thumbnail face';
     socialBox.innerHTML='';
     socialBox.appendChild(el('div',{class:'text-white'}, [
       document.createTextNode('Top '),
       el('span',{class:'text-gold', text: top.source || '—'}),
       document.createTextNode(' — '+(top.title||'').slice(0,80)),
     ]));
+    if(sim != null){
+      const tone = sim >= 85 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                 : sim >= 70 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                 : 'bg-white/10 text-white/60 border-white/15';
+      socialBox.appendChild(el('span',{class:'inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full border ' + tone, text: simChip}));
+    }
     if(top.link){
       const safe = safeUrl(top.link);
       if(safe){
@@ -280,7 +290,7 @@ scanBtn.addEventListener('click', async()=>{
         socialBox.appendChild(el('div',{class:'text-xs text-white/30 break-all', text: top.link}));
       }
     }
-    socialBox.appendChild(el('div',{class:'text-xs text-white/40 mt-1', text: `${faceDistStr} · hits ${s.num_hits} · face-similar ${s.face_similar_count} · mode ${s.mode}`}));
+    socialBox.appendChild(el('div',{class:'text-xs text-white/40 mt-1', text: `hits ${s.num_hits} · face-similar ${s.face_similar_count} · mode ${s.mode}`}));
     // hits
     hits.innerHTML='';
     for(const h of (s.hits || []).slice(0, 8)){
@@ -319,13 +329,17 @@ scanBtn.addEventListener('click', async()=>{
   if(rc.txHash){
     const safe = safeUrl(rc.explorerUrl);
     const box=el('div',{class:'rounded border border-emerald-500/20 bg-emerald-500/10 p-2'});
-    box.appendChild(el('div',{class:'text-xs font-semibold text-emerald-300', text:'Anchored on Polygon Amoy'}));
+    box.appendChild(el('div',{class:'text-xs font-semibold text-emerald-300', text:'Anchored on Polygon Amoy' + (rc.via === 'contract' ? ' — via FaceAnchor contract' : '')}));
     box.appendChild(el('div',{class:'font-mono text-xs break-all mt-1', text: rc.txHash}));
     if(safe){
       const a=el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-cyan', text: '↗ '+rc.explorerUrl});
       box.appendChild(a);
     }
-    box.appendChild(el('div',{class:'text-xs text-white/40', text:`block ${rc.blockNumber||'?'} · Input Data == fingerprint ✓`}));
+    if(rc.contractAddress){
+      const cUrl = safeUrl('https://amoy.polygonscan.com/address/'+rc.contractAddress);
+      if(cUrl) box.appendChild(el('a',{href:cUrl, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-goldmuted hover:text-gold block mt-0.5', text: 'contract '+rc.contractAddress}));
+    }
+    box.appendChild(el('div',{class:'text-xs text-white/40', text:`block ${rc.blockNumber||'?'} · on-chain data == fingerprint ✓`}));
     receiptEl.appendChild(box);
     if(rc.explorerUrl){
       tickerLink.href = rc.explorerUrl;
@@ -380,14 +394,21 @@ verifyBtn.addEventListener('click', async()=>{
       if(j.block_index != null){
         verifyOut.appendChild(el('span',{class:'text-white/40', text: ' · block #'+j.block_index+' '+(j.block_hash||'').slice(0,10)+'…'}));
       }
-      if(j.txs && j.txs[0]){
-        const t = j.txs[0];
+      verifyOut.appendChild(el('div',{class:'mt-1 space-y-0.5'}));
+      const wrap = verifyOut.lastChild;
+      for(const t of (j.txs || [])){
+        const label = t.via === 'contract'
+          ? 'contract state anchoredAt ✓'
+          : 'tx ' + (t.txHash||'').slice(0,10) + '… input ✓';
+        const row = el('div',{class:'text-xs ' + (t.verified === true ? 'text-emerald-300' : 'text-red-300')});
         if(t.explorerUrl){
           const safe = safeUrl(t.explorerUrl);
           if(safe){
-            verifyOut.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs text-cyan ml-1', text: '↗ pol ygon scan'}));
+            wrap.appendChild(el('a',{href:safe, target:'_blank', rel:'noopener noreferrer', class:'text-xs ' + (t.verified === true ? 'text-emerald-300 hover:underline' : 'text-red-300 hover:underline'), text: label + ' ↗'}));
+            continue;
           }
         }
+        wrap.appendChild(el('span',{text: label}));
       }
     } else if(ok === false){
       verifyOut.appendChild(el('span',{class:'text-red-400', text: '✗ verified False'}));

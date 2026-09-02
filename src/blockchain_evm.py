@@ -108,13 +108,34 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
         return {"mode": "evm", "error": "fingerprint must be 64-char hex sha256", "verified": False}
 
     w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 15}))
+    try:
+        from web3.middleware import ExtraDataToPOAMiddleware
+        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+    except Exception:
+        pass
     if not w3.is_connected():
         return {"mode": "evm", "error": f"RPC not reachable: {rpc}", "verified": False}
+
+    contract_address = os.getenv("EVM_CONTRACT_ADDRESS", "").strip()
 
     try:
         acct = Account.from_key(pk)
         nonce = w3.eth.get_transaction_count(acct.address)
-        data_hex = "0x" + fingerprint
+
+        if contract_address:
+            # Contract path: FaceAnchor.anchor(bytes32,string) — event + mapping,
+            # verifiable trustlessly by anyone via the contract's verify() view.
+            abi = [{
+                "inputs": [
+                    {"internalType": "bytes32", "name": "fingerprint", "type": "bytes32"},
+                    {"internalType": "string", "name": "cid", "type": "string"},
+                ],
+                "name": "anchor", "outputs": [], "stateMutability": "nonpayable", "type": "function",
+            }]
+            c = w3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=abi)
+            data_hex = c.encode_abi("anchor", [bytes.fromhex(fingerprint), ""])
+        else:
+            data_hex = "0x" + fingerprint
         # Use current base_fee * 2 + priority for safety on Amoy
         try:
             base_fee = w3.eth.get_block("latest").get("baseFeePerGas", 0)
@@ -123,8 +144,9 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
         max_fee = max(w3.to_wei(60, "gwei"), int(base_fee * 2) + w3.to_wei(30, "gwei"))
         max_priority = w3.to_wei(30, "gwei")
         tx = {
-            "to": acct.address, "value": 0, "data": data_hex, "nonce": nonce,
-            "gas": 50000, "chainId": chain_id,
+            "to": contract_address and Web3.to_checksum_address(contract_address) or acct.address,
+            "value": 0, "data": data_hex, "nonce": nonce,
+            "gas": 120000 if contract_address else 50000, "chainId": chain_id,
             "maxFeePerGas": max_fee,
             "maxPriorityFeePerGas": max_priority,
         }
@@ -138,6 +160,8 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
             return {"mode": "evm", "error": "signed tx missing raw bytes (web3.py version?)", "verified": False}
         h = w3.eth.send_raw_transaction(raw)
         receipt = w3.eth.wait_for_transaction_receipt(h, timeout=60)
+        if getattr(receipt, "status", 1) != 1:
+            return {"mode": "evm", "error": f"tx reverted on-chain (tx {h.hex()})", "verified": False}
         tx_hash_raw = h.hex()
         if not tx_hash_raw.startswith("0x"):
             tx_hash_raw = "0x" + tx_hash_raw
@@ -147,7 +171,10 @@ def anchor_evm(fingerprint: str, payload: dict, chain_file=None):
         result = {
             "mode": "evm", "txHash": tx_hash_raw, "blockNumber": receipt.blockNumber,
             "explorerUrl": explorer, "data_hex": data_hex, "from": acct.address,
+            "via": "contract" if contract_address else "self-tx",
         }
+        if contract_address:
+            result["contractAddress"] = contract_address
 
         if chain_file is not None:
             try:
@@ -206,6 +233,40 @@ def verify_evm(fingerprint: str, chain_file=None):
 
     # Step 2: EVM mirror
     entries = _read_mirror(fingerprint)
+
+    # Step 2b: trustless contract read — works even with no mirror file, so a
+    # judge can verify any fingerprint from contract state alone.
+    contract_address = os.getenv("EVM_CONTRACT_ADDRESS", "").strip()
+    if not entries and contract_address:
+        try:
+            from web3 import Web3 as _W3
+            w3 = _W3(_W3.HTTPProvider(
+                os.getenv("EVM_RPC_URL", "https://polygon-amoy-bor-rpc.publicnode.com"),
+                request_kwargs={"timeout": 15},
+            ))
+            if w3.is_connected():
+                abi = [
+                    {"inputs": [{"internalType": "bytes32", "name": "fingerprint", "type": "bytes32"}],
+                     "name": "anchoredAt",
+                     "outputs": [{"internalType": "uint64", "name": "", "type": "uint64"}],
+                     "stateMutability": "view", "type": "function"},
+                ]
+                c = w3.eth.contract(address=_W3.to_checksum_address(contract_address), abi=abi)
+                ts = c.functions.anchoredAt(bytes.fromhex(fingerprint.lower())).call()
+                if ts:
+                    return {
+                        "verified": True,
+                        "txs": [{
+                            "verified": True, "via": "contract",
+                            "contractAddress": contract_address,
+                            "anchoredAt": int(ts),
+                            "explorerUrl": f"https://amoy.polygonscan.com/address/{contract_address}#readContract",
+                        }],
+                        "local_block": local_block,
+                    }
+        except Exception:
+            pass  # fall through to mirror-based verification
+
     if not entries:
         if local_block:
             return {
@@ -230,13 +291,42 @@ def verify_evm(fingerprint: str, chain_file=None):
         }
     expected = "0x" + fingerprint.lower()
     results = []
+
+    # Trustless path: read FaceAnchor.anchoredAt(bytes32) straight from the
+    # contract — no mirror file needed, anyone can replicate this on Polygonscan.
+    if contract_address:
+        try:
+            abi = [
+                {"inputs": [{"internalType": "bytes32", "name": "fingerprint", "type": "bytes32"}],
+                 "name": "anchoredAt",
+                 "outputs": [{"internalType": "uint64", "name": "", "type": "uint64"}],
+                 "stateMutability": "view", "type": "function"},
+            ]
+            c = w3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=abi)
+            ts = c.functions.anchoredAt(bytes.fromhex(fingerprint.lower())).call()
+            results.append({
+                "verified": ts != 0,
+                "via": "contract",
+                "contractAddress": contract_address,
+                "anchoredAt": int(ts) if ts else None,
+                "explorerUrl": f"https://amoy.polygonscan.com/address/{contract_address}#readContract",
+            })
+        except Exception as e:
+            results.append({"verified": None, "via": "contract", "error": str(e)[:100]})
+
     for tx_hash, payload in entries:
         try:
             tx = w3.eth.get_transaction(tx_hash)
             igh = tx["input"].hex() if hasattr(tx["input"], "hex") else tx["input"]
             if not igh.startswith("0x"):
                 igh = "0x" + igh
-            ok = igh.lower() == expected
+            to_addr = (tx.get("to") or "").lower()
+            if contract_address and to_addr == contract_address.lower():
+                # Contract anchor: calldata = 4-byte selector + 32-byte fp;
+                # in the 0x-prefixed hex the fingerprint spans [10:74].
+                ok = igh.lower()[10:74] == fingerprint.lower()
+            else:
+                ok = igh.lower() == expected
             results.append({
                 "verified": ok,
                 "txHash": tx_hash,

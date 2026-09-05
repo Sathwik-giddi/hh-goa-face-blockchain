@@ -179,9 +179,9 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
                     "hits": face_bearing[:4],
                 },
                 "reason": ("No publicly indexed page both (a) contains a face similar enough to this "
-                           "scan and (b) is still reachable as a real page. Nothing was anchored "
-                           "on-chain — the pipeline does not record look-alike or link-rotted pages "
-                           "as evidence."),
+                           "scan and (b) is still reachable as a real page — even after a fresh "
+                           "index-snapshot retry. Nothing was anchored on-chain — the pipeline does "
+                           "not record look-alike or link-rotted pages as evidence."),
             }
 
         fp = fingerprint_post(top, image_path=face["crop_path"])

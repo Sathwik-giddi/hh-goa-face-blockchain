@@ -57,8 +57,11 @@ def _serpapi_upload(image_path: Path, api_key: str, timeout: int = 30) -> str:
     return image_id
 
 
-def _lens_search(image_id: str, api_key: str, hl: str = "en", country: str = "us", timeout: int = 30) -> dict:
+def _lens_search(image_id: str, api_key: str, hl: str = "en", country: str = "us",
+                 timeout: int = 30, no_cache: bool = False) -> dict:
     params = {"engine": "google_lens", "image_id": image_id, "api_key": api_key, "hl": hl, "country": country}
+    if no_cache:
+        params["no_cache"] = "true"  # fresh index snapshot (Lens results rotate)
     r = requests.get("https://serpapi.com/search.json", params=params, timeout=timeout)
     r.raise_for_status()
     return r.json()
@@ -291,32 +294,56 @@ def reverse_image_search(
     # never stall the pipeline (unscored = honest None, not a fake number).
     # In the same pass, validate every candidate's source page: a candidate is
     # only citable evidence if its page is reachable and not link-rotted.
-    sims = [None] * len(hits)
-    links = [(False, "not checked", "")] * len(hits)
-
-    def _score_one(i, h):
-        s, _e = (None, None)
+    def _score_one(h, query_feat):
         try:
             s, _e = _score_thumbnail_face(h.get("thumbnail") or "", h.get("image") or "", query_feat)
         except Exception:
             s = None
         ok, note, final = _validate_link(h.get("link") or h.get("url") or "")
-        return i, s, (ok, note, final)
+        return s, (ok, note, final)
 
-    with ThreadPoolExecutor(max_workers=12) as ex:
-        futures = {ex.submit(_score_one, i, h): i for i, h in enumerate(hits)}
-        done, _pending = wait(futures, timeout=40)
-        for fut in done:
-            try:
-                i, s, linkres = fut.result()
-            except Exception:
-                continue
-            sims[i] = s
-            links[i] = linkres
+    def _score_hits(pool, qfeat):
+        results = [None] * len(pool)
+        with ThreadPoolExecutor(max_workers=12) as ex:
+            futures = {ex.submit(_score_one, h, qfeat): i for i, h in enumerate(pool)}
+            done, _pending = wait(futures, timeout=40)
+            for fut in done:
+                try:
+                    i = futures[fut]
+                    results[i] = fut.result()
+                except Exception:
+                    pass
+        for h, res in zip(pool, results):
+            if res is None:
+                h["_face_sim"], h["_link_valid"], h["_link_note"], h["_link_final"] = None, False, "not checked", ""
+            else:
+                s, (ok, note, final) = res
+                h["_face_sim"] = s
+                h["_link_valid"], h["_link_note"], h["_link_final"] = ok, note, final
 
-    for h, s, lr in zip(hits, sims, links):
-        h["_face_sim"] = s
-        h["_link_valid"], h["_link_note"], h["_link_final"] = lr
+    _score_hits(hits, query_feat)
+
+    def _citable(h):
+        return (h.get("_face_sim") or 0) >= min_face_similarity and h.get("_link_valid")
+
+    # Lens results rotate between runs — if nothing is citable, one cache-busting
+    # retry pulls a fresh index snapshot that may contain the true source page.
+    if hits and not any(_citable(h) for h in hits):
+        try:
+            raw2 = _lens_search(image_id_a, api_key, no_cache=True)
+            vm2 = list(raw2.get("visual_matches") or raw2.get("image_results") or [])
+            ex2 = list(raw2.get("exact_matches") or [])
+            for h in ex2:
+                h["_exact"] = True
+            known = {(h.get("link") or h.get("url") or "") for h in hits}
+            new_hits = [h for h in _dedupe(vm2 + ex2) if (h.get("link") or h.get("url") or "") not in known]
+            if new_hits:
+                raws.append(("lens:no_cache", raw2))
+                queries.append({"image": image_path.name, "engine": "google_lens_fresh_snapshot", "hits": len(new_hits)})
+                _score_hits(new_hits, query_feat)
+                hits = _merge_hits(hits, new_hits)
+        except Exception as e:
+            print(f"[search] no_cache retry failed (non-fatal): {e}")
 
     prefer = (prefer_source or "reddit").lower()
     def rank(h):

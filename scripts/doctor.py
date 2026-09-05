@@ -35,15 +35,19 @@ def warn_check(name, fn):
         results.append((WARN, name, str(e)[:110]))
 
 
-# 1. Python + deps
+# 1. Python + deps — importlib = pure availability check
 def c_deps():
-    import cv2, web3, fastapi, onnxruntime, dotenv, filelock  # noqa
+    import importlib
+    import cv2
+    for m in ("web3", "fastapi", "onnxruntime", "filelock", "solcx"):
+        importlib.import_module(m)
     return f"opencv {cv2.__version__}, onnxruntime ok"
 check("python dependencies", c_deps)
 
 
 def c_heif():
-    import pillow_heif  # noqa
+    import importlib
+    importlib.import_module("pillow_heif")
     return "HEIC support present"
 check("pillow-heif (iPhone photos)", c_heif)
 
@@ -63,7 +67,6 @@ check("ArcFace recognizer", c_arc)
 
 # 3. Live end-to-end face embedding
 def c_embed():
-    import cv2
     from src.face_id import face_embedding
     f, m = face_embedding(str(ROOT / "data" / "samples" / "lena.jpg"))
     assert f is not None, "embedding failed"
@@ -127,20 +130,18 @@ def c_contract():
     return f"{addr[:10]}… totalAnchored={c.functions.totalAnchored().call()}"
 check("FaceAnchor contract", c_contract)
 
-# 6. Audit trail integrity
+# 6. Audit trail integrity — full hash walk, same algorithm as blockchain_local
 def c_chain():
-    from src.blockchain_local import _load_chain
+    from src.blockchain_local import _load_chain, _hash_block
     chain = _load_chain(ROOT / "chain.json")
     assert len(chain) >= 2, "chain too short"
-    prev = "0"
-    import hashlib, json
+    prev = "0" * 64
     for b in chain:
-        payload = {k: v for k, v in b.items() if k != "hash"}
-        calc = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-        # hash format may differ; only verify linkage
-        assert b["prev_hash"] == prev or prev == "0", f"broken linkage at block {b['index']}"
+        assert b["prev_hash"] == prev, f"broken prev_hash linkage at block {b['index']}"
+        calc = _hash_block({k: v for k, v in b.items() if k != "hash"})
+        assert calc == b["hash"], f"block {b['index']} hash mismatch — chain was tampered"
         prev = b["hash"]
-    return f"{len(chain)} blocks, linkage intact"
+    return f"{len(chain)} blocks, every hash verified"
 check("local chain integrity", c_chain)
 
 # 7. SerpAPI live (costs 1 credit; warn-only)

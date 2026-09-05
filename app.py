@@ -121,7 +121,10 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
     try:
         face = detect_and_encode(tmp, out_dir=OUTPUTS, face_index=face_index)
         if not face.get("crop_path"):
-            raise HTTPException(422, face.get("warning", "no face detected"))
+            warning = face.get("warning", "no face detected")
+            if warning.startswith("cannot decode"):
+                warning = "Could not read the file as an image — try a valid JPG, PNG, WEBP or HEIC"
+            raise HTTPException(422, warning)
 
         # crop paths must be web-relative ("/outputs/<file>" is served by the
         # outputs route) — the frontend prepends "/" to whatever we return.

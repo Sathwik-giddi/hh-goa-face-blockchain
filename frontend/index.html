@@ -102,7 +102,7 @@ tailwind.config={theme:{extend:{
         </p>
 
         <div class="mt-7 bg-panel border border-line p-5 md:p-6">
-          <label id="drop" class="brackets group block border border-dashed border-line hover:border-ink/40 bg-paper/60 hover:bg-white p-7 text-center cursor-pointer transition">
+          <label id="drop" class="brackets group block border border-dashed border-line hover:border-ink/40 bg-paper/60 hover:bg-white p-7 text-center cursor-pointer transition focus:outline-none focus:ring-2 focus:ring-ink/30" role="button" tabindex="0" aria-label="Upload a face image">
             <b class="b"></b>
             <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/avif" class="hidden"/>
             <div id="scanBeamHost" class="relative">
@@ -135,7 +135,7 @@ tailwind.config={theme:{extend:{
           <button id="scanBtn" class="mt-5 w-full h-12 bg-ink text-white font-display font-semibold tracking-wide text-[15px] hover:bg-[#22303E] transition disabled:opacity-40 disabled:cursor-not-allowed">
             RUN THE PIPELINE
           </button>
-          <div id="status" class="mt-2.5 text-xs font-mono text-slate min-h-[1.4em]"></div>
+          <div id="status" class="mt-2.5 text-xs font-mono text-slate min-h-[1.4em]" role="status" aria-live="polite"></div>
         </div>
 
         <details id="verifyDetails" class="mt-4 bg-panel border border-line px-5 py-4">
@@ -147,7 +147,7 @@ tailwind.config={theme:{extend:{
                    class="flex-1 h-11 border border-line bg-paper px-3 text-sm font-mono focus:border-veridian"/>
             <button id="verifyBtn" class="h-11 px-5 bg-ink text-white font-medium text-sm hover:bg-[#22303E] transition">Verify</button>
           </div>
-          <div id="verifyOut" class="mt-2.5 text-sm font-mono min-h-[1.4em]"></div>
+          <div id="verifyOut" class="mt-2.5 text-sm font-mono min-h-[1.4em]" role="status" aria-live="polite"></div>
           <div class="text-[11px] text-slate mt-2 font-mono">tamper check: flip the last hex char — verification must fail</div>
         </details>
       </section>
@@ -375,6 +375,12 @@ drop.addEventListener('drop',e=>{
   if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]) showPreview(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change',()=>{ if(fileInput.files[0]) showPreview(fileInput.files[0]); });
+drop.addEventListener('keydown', e=>{
+  if(e.key==='Enter' || e.key===' '){
+    e.preventDefault();
+    fileInput.click();
+  }
+});
 
 /* ---- pipeline run ---- */
 scanBtn.addEventListener('click',()=>runScan());

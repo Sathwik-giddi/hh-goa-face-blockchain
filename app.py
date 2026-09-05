@@ -18,7 +18,7 @@ from src.utils import fingerprint_post, is_hex64, safe_filename
 from src.blockchain import anchor, verify
 from src.blockchain_local import _load_chain
 
-app = FastAPI(title="HH Goa — Face→Social→Chain", version="4.1-sface")
+app = FastAPI(title="HH Goa — Face→Social→Chain", version="5.0-arcface")
 
 # CORS: lock to local dev origins (override via ALLOWED_ORIGINS env if needed)
 allowed = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:3000,http://localhost:3000")

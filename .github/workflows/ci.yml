@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Hermetic test mode per spec §20: no SerpAPI key, local chain only.
+      # Live-search test auto-skips without SERPAPI_API_KEY.
+      BLOCKCHAIN_MODE: local
+      CHAIN_FILE: /tmp/test_chain.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system OpenCV deps
+        run: sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (pyflakes)
+        run: |
+          pip install pyflakes
+          python -m pyflakes src/*.py app.py scripts/*.py tests/*.py
+
+      - name: Run tests
+        run: python -m pytest tests/ -v

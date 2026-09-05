@@ -1,12 +1,17 @@
 # HH Goa 2026 Task 3 — Face → Social → Blockchain ($0 on your Mac)
 
-**Pipeline:** `face scan (image) → detect & crop face → live reverse-image search (Google Lens index: Reddit/X/IG/TikTok) → SHA256 fingerprint → tamper-evident blockchain → re-verify`
+[![CI](https://github.com/Sathwik-giddi/hh-goa-face-blockchain/actions/workflows/ci.yml/badge.svg)](https://github.com/Sathwik-giddi/hh-goa-face-blockchain/actions/workflows/ci.yml)
+
+**Pipeline:** `face scan → YuNet detect → ArcFace embed → dual live Google Lens search → source-page verification → SHA-256 fingerprint → FaceAnchor contract (Polygon Amoy) → independent re-verification + tamper test`
+
+![Evidence record UI](docs/screenshot.png)
+*The web UI — an "evidence record": every stage stamps into the ledger rail as it completes, each with its own on-chain proof link.*
 
 ```mermaid
 flowchart LR
     A[face scan.jpg] --> B["YuNet DNN<br/>detect + crop + pHash"]
-    B --> C["Google Lens<br/>(SerpAPI, live)"]
-    C --> D["pHash re-rank<br/>face-similarity %"]
+    B --> C["Google Lens ×2 queries<br/>(SerpAPI, live)"]
+    C --> D["ArcFace re-rank<br/>+ link verification"]
     D --> E["SHA-256<br/>fingerprint"]
     E --> F["FaceAnchor contract<br/>Polygon Amoy"]
     E --> G["local hash-chain<br/>chain.json"]
@@ -45,6 +50,9 @@ pip install -r requirements.txt
 # 2. Configure (use throwaway keys, never reuse mainnet)
 cp .env.example .env
 # edit .env: SERPAPI_API_KEY=... and EVM_PRIVATE_KEY=0x...
+
+# 0. Pre-flight check — verify every link in the chain before any demo
+python3 scripts/doctor.py   # deps, models, keys, RPC, balance, contract, chain integrity, quota
 
 # 3a. One-command demo (8-stage output, for screen recording)
 ./scripts/run_demo.sh data/samples/lena.jpg
@@ -132,6 +140,7 @@ The fingerprint is over the **discovered post**, canonicalized deterministically
 src/{pipeline.py,face_id.py,search.py,blockchain.py,blockchain_local.py,blockchain_evm.py,utils.py}
 contracts/FaceAnchor.sol  (deployed on Amoy: anchoring + Anchored event + trustless verify)
 scripts/deploy_contract.py (compile + deploy + write EVM_CONTRACT_ADDRESS to .env)
+scripts/doctor.py          (pre-flight: deps, models, keys, RPC, balance, contract, chain integrity)
 scripts/run_demo.sh        (one-command 8-stage demo for the screen recording)
 models/*.onnx             (YuNet 230KB + SFace 37MB + ArcFace 166MB, auto-downloaded, .gitignored)
 frontend/index.html  (XSS-safe, multi-face picker, evidence ledger UI, similarity meter)

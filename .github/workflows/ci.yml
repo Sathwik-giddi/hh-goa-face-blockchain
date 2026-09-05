@@ -36,4 +36,6 @@ jobs:
           python -m pyflakes src/*.py app.py scripts/*.py tests/*.py
 
       - name: Run tests
-        run: python -m pytest tests/ -v
+        run: |
+          pip install pytest
+          python -m pytest tests/ -v

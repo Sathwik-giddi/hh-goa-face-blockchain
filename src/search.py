@@ -138,12 +138,18 @@ def _validate_link(url: str) -> tuple:
                          headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
                                   "Accept": "text/html,application/xhtml+xml"})
         ct = (r.headers.get("content-type") or "").lower()
+        if r.status_code == 999:  # LinkedIn bot wall — page exists
+            return True, "exists (bot-gated)", str(r.url)
+        if r.status_code == 429:  # rate-limited read — not a deletion
+            return True, "exists (rate-limited read)", str(r.url)
         if r.status_code >= 400:
             return False, f"HTTP {r.status_code}", str(r.url)
         if ct and not (ct.startswith("text/html") or ct.startswith("application/xhtml") or ct.startswith("text/plain")):
             return False, f"non-html ({ct.split(';')[0]})", str(r.url)
         origin_host = _reg_domain(urlparse(url).netloc)
         final_host = _reg_domain(urlparse(str(r.url)).netloc)
+        if {origin_host, final_host} == {"threads.net", "threads.com"}:
+            origin_host = final_host  # canonical domain migration
         if final_host != origin_host:
             return False, f"redirected off-site → {final_host}", str(r.url)
         return True, "reachable", str(r.url)

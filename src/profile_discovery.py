@@ -33,7 +33,7 @@ WEIGHTS = {
 # name+username+image+backlink = 0.85 (high) · name+company+designation+backlink = 0.85 (high)
 
 AGGREGATORS = {"wikipedia.org", "wikidata.org", "famousbirthdays.com", "imdb.com",
-               "imdb.name", "sportskeeda.com", "alchetron.com", "wikitia.com"}
+               "imdb.name", "sportskeeda.com", "alchetron.com", "wikitia.com", "viki.com"}
 
 NON_PROFILE_GENERIC = re.compile(
     r"/(login|signin|signup|search\b|hashtag|directory|collections|jobs)(/|$|\?)", re.I)
@@ -75,7 +75,7 @@ PLATFORMS = {
         [r"github\.com/([\w\-]+)/?"],
         ['site:github.com "{name}"', 'site:github.com "{username}"'],
         [r"(blob|tree|pull|issues|discussions|commit|gists|orgs)"],
-        notes="only root user pages are profile candidates"),
+        notes="only root user pages (one path segment) are profile candidates"),
     "youtube": PlatformDef("youtube", "YouTube", ["youtube.com"],
         [r"youtube\.com/@([\w.\-]+)/?", r"youtube\.com/(?:c|user)/([\w.\-]+)/?",
          r"youtube\.com/channel/([\w\-]+)"],
@@ -90,13 +90,14 @@ PLATFORMS = {
         ['site:reddit.com/user "{name}"', 'site:reddit.com/u "{username}"'],
         [r"(comments|r/|topic)"]),
     "medium": PlatformDef("medium", "Medium", ["medium.com"],
-        [r"medium\.com/@([\w.\-]+)/?", r"medium\.com/([\w\-]+)/?"],
+        [r"medium\.com/@([\w.\-]+)/?", r"https?://([\w\-]+)\.medium\.com/?"],
         ['site:medium.com "{name}"', 'site:medium.com "@{username}"'],
-        [r"(p/|tag|publication)"]),
+        [r"(p/|tag/|publication/)"],
+        notes="@handles or <author>.medium.com roots only — article slugs rejected"),
     "devto": PlatformDef("devto", "Dev.to", ["dev.to"],
         [r"dev\.to/([\w\-]+)/?"],
         ['site:dev.to "{name}"', 'site:dev.to "{username}"'],
-        [r"(comment|tag)/"], notes="root paths are usernames"),
+        [], notes="profile = exactly one path segment; article slugs rejected"),
     "stackoverflow": PlatformDef("stackoverflow", "Stack Overflow", ["stackoverflow.com"],
         [r"stackoverflow\.com/users/(\d+)/([\w\-]+)"],
         ['site:stackoverflow.com/users "{name}"'],
@@ -210,6 +211,8 @@ def canonical_url(url: str, platform: str) -> str:
     host = re.sub(r"^(www|m|mobile)\.", "", u.netloc.lower())
     if platform == "x" and host == "twitter.com":
         host = "x.com"
+    if platform == "threads" and host == "threads.net":
+        host = "threads.com"
     keep = []
     if platform == "facebook":
         keep = [(k, v) for k, v in parse_qsl(u.query) if k == "id"]
@@ -252,6 +255,9 @@ def normalize_result(organic: dict, platform_id: str, provider_name: str,
         username = m.group(1) if m.groups() else None
         if p.username_required and not username:
             return None
+        if platform_id in ("github", "devto", "medium", "x", "instagram", "tiktok") \
+            and len(urlparse(url).path.strip("/").split("/")) > 1:
+            return None  # repo/article pages — only root user pages are profiles
         canonical = canonical_url(url, platform_id)
 
     return {

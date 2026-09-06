@@ -15,7 +15,7 @@ import requests
 from PIL import Image
 from dotenv import load_dotenv
 
-from .face_id import face_embedding, embedding_similarity
+from .face_id import face_embedding
 
 load_dotenv()
 
@@ -198,23 +198,36 @@ def _score_image_face(url: str, query_feat) -> tuple:
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None or img.size == 0:
             return None, "decode fail"
-        feat, _why = face_embedding(img)
-        if feat is None:
+        # Embed up to the two largest faces and take the best — the person may
+        # not be the largest face on a page (group photos, event coverage).
+        from src.face_id import detect_rows_yunet, _arcface_embed, embedding_similarity as _sim
+        img2, rows = detect_rows_yunet(img)
+        rows.sort(key=lambda x: x[2] * x[3], reverse=True)
+        best = None
+        for row in rows[:2]:
+            feat = _arcface_embed(img2, row)
+            if feat is None:
+                continue
+            s = _sim(query_feat, feat)
+            if s is not None and (best is None or s > best):
+                best = s
+        if best is None:
             return None, "no_face"
-        return embedding_similarity(query_feat, feat), None
+        return best, None
     except Exception as e:
         return None, str(e)[:40]
 
 
 def _score_thumbnail_face(url: str, image_url: str, query_feat) -> tuple:
-    """Score a candidate by its face, preferring the full-size image over the
+    """Score a candidate by its face, preferring full-size variants over the
     thumbnail (higher resolution → far more reliable embeddings).
     """
-    if image_url and image_url != url:
-        s, err = _score_image_face(image_url, query_feat)
-        if s is not None:
-            return s, None
-    return _score_image_face(url, query_feat)
+    for u in (image_url, url):
+        if u:
+            s, _err = _score_image_face(u, query_feat)
+            if s is not None:
+                return s, None
+    return None, "no_face"
 
 
 def reverse_image_search(
@@ -246,40 +259,58 @@ def reverse_image_search(
     query_hash = _phash(image_path)
     query_feat, embed_method = face_embedding(image_path)
 
-    # Query 1 + 2 in parallel: face crop AND original photo on Lens.
+    def _tight_variant(p: Path) -> Path | None:
+        """Tighter re-crop of a face crop — a third query image that surfaces
+        a different slice of the index than the wide crop or the full photo."""
+        img = cv2.imread(str(p))
+        if img is None or img.size == 0:
+            return None
+        h, w = img.shape[:2]
+        dx, dy = int(w * 0.14), int(h * 0.14)
+        if w - 2 * dx < 60 or h - 2 * dy < 60:
+            return None
+        import tempfile
+        tight = Path(tempfile.gettempdir()) / f"tight_{abs(hash(str(p))) % 9999}.jpg"
+        cv2.imwrite(str(tight), img[dy:h - dy, dx:w - dx])
+        return tight
+
+    variants = [("face crop", image_path)]
+    if original_path and Path(original_path).exists() and _phash(Path(original_path)) != query_hash:
+        variants.append(("full photo", Path(original_path)))
+    tight = _tight_variant(Path(image_path))
+    if tight and _phash(tight) != query_hash:
+        variants.append(("tight crop", tight))
+
+    # All query variants in parallel — each surfaces a different slice of the index.
     raws = []
     queries = []
     hits = []
-    with ThreadPoolExecutor(max_workers=2) as ex:
-        fut_a = ex.submit(_lens_hits, image_path, api_key)
-        fut_b = ex.submit(_lens_hits, Path(original_path), api_key) \
-            if original_path and Path(original_path).exists() \
-            and _phash(Path(original_path)) != query_hash else None
-        try:
-            image_id_a, hits_a, raws_a = fut_a.result(timeout=45)
-            hits = hits_a
-            raws.extend(raws_a)
-            queries.append({"image": image_path.name, "engine": "google_lens", "hits": len(hits_a)})
-        except Exception as e:
-            fut_b and fut_b.cancel()
-            raise RuntimeError(f"Lens search failed: {e}") from e
-        if fut_b:
+    image_ids = {}
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        futs = {label: ex.submit(_lens_hits, p, api_key) for label, p in variants}
+        first = True
+        for label, fut in futs.items():
             try:
-                _idb, hits_b, raws_b = fut_b.result(timeout=45)
-                raws.extend(raws_b)
-                before = len(hits)
-                hits = _merge_hits(hits, hits_b)
-                queries.append({"image": Path(original_path).name, "engine": "google_lens",
-                                 "hits": len(hits_b), "new_after_merge": len(hits) - before})
+                iid, h_variant, raws_v = fut.result(timeout=45)
             except Exception as e:
-                print(f"[search] original-image query failed (non-fatal): {e}")
+                if first:
+                    raise RuntimeError(f"Lens search failed: {e}") from e
+                print(f"[search] {label} query failed (non-fatal): {e}")
+                continue
+            first = False
+            image_ids[label] = iid
+            raws.extend(raws_v)
+            before = len(hits)
+            hits = _merge_hits(hits, h_variant)
+            queries.append({"image": label, "engine": "google_lens", "hits": len(h_variant),
+                             "new_after_merge": len(hits) - before})
 
-    # Query 3 (only when the pool is thin): reverse-image on the crop.
-    if len(hits) < 15:
+    # Thin pool: reverse-image on the crop as one more slice.
+    if len(hits) < 15 and image_ids.get("face crop"):
         try:
-            hits_c, raws_c = _reverse_hits(image_id_a, api_key)
+            hits_c, raws_c = _reverse_hits(image_ids["face crop"], api_key)
             raws.extend(raws_c)
-            queries.append({"image": image_path.name, "engine": "google_reverse_image", "hits": len(hits_c)})
+            queries.append({"image": "face crop", "engine": "google_reverse_image", "hits": len(hits_c)})
             hits = _merge_hits(hits, hits_c)
         except Exception as e:
             print(f"[search] reverse_image fallback failed: {e}")
@@ -326,24 +357,27 @@ def reverse_image_search(
     def _citable(h):
         return (h.get("_face_sim") or 0) >= min_face_similarity and h.get("_link_valid")
 
-    # Lens results rotate between runs — if nothing is citable, one cache-busting
-    # retry pulls a fresh index snapshot that may contain the true source page.
+    # Lens results rotate between runs — if nothing is citable, cache-bust the
+    # variants we have image_ids for; each fresh snapshot is another slice.
     if hits and not any(_citable(h) for h in hits):
-        try:
-            raw2 = _lens_search(image_id_a, api_key, no_cache=True)
-            vm2 = list(raw2.get("visual_matches") or raw2.get("image_results") or [])
-            ex2 = list(raw2.get("exact_matches") or [])
-            for h in ex2:
-                h["_exact"] = True
-            known = {(h.get("link") or h.get("url") or "") for h in hits}
-            new_hits = [h for h in _dedupe(vm2 + ex2) if (h.get("link") or h.get("url") or "") not in known]
-            if new_hits:
-                raws.append(("lens:no_cache", raw2))
-                queries.append({"image": image_path.name, "engine": "google_lens_fresh_snapshot", "hits": len(new_hits)})
-                _score_hits(new_hits, query_feat)
-                hits = _merge_hits(hits, new_hits)
-        except Exception as e:
-            print(f"[search] no_cache retry failed (non-fatal): {e}")
+        for label, iid in list(image_ids.items())[:2]:  # cap retries at 2 credits
+            try:
+                raw2 = _lens_search(iid, api_key, no_cache=True)
+                vm2 = list(raw2.get("visual_matches") or raw2.get("image_results") or [])
+                ex2 = list(raw2.get("exact_matches") or [])
+                for h in ex2:
+                    h["_exact"] = True
+                known = {(h.get("link") or h.get("url") or "") for h in hits}
+                new_hits = [h for h in _dedupe(vm2 + ex2) if (h.get("link") or h.get("url") or "") not in known]
+                if new_hits:
+                    raws.append((f"lens:no_cache:{label}", raw2))
+                    queries.append({"image": label, "engine": "google_lens_fresh_snapshot", "hits": len(new_hits)})
+                    _score_hits(new_hits, query_feat)
+                    hits = _merge_hits(hits, new_hits)
+                if any(_citable(h) for h in hits):
+                    break
+            except Exception as e:
+                print(f"[search] no_cache retry ({label}) failed (non-fatal): {e}")
 
     prefer = (prefer_source or "reddit").lower()
     def rank(h):
@@ -371,6 +405,19 @@ def reverse_image_search(
     vm_sorted = sorted(hits, key=rank)
     face_similar = [h for h in vm_sorted
                     if (h.get("_face_sim") or 0) >= min_face_similarity and h.get("_link_valid")]
+    # Adaptive precision: the pool's noise floor is the best similarity among
+    # candidates that embed a face but fall below threshold. A confident top
+    # must clear the threshold AND beat that floor by a margin — a lone 45%
+    # candidate against a 40% field is a coincidence, not an identity.
+    MARGIN = 6.0
+    sims_below = sorted(((h.get("_face_sim") or 0) for h in vm_sorted
+                         if h.get("_face_sim") is not None and (h.get("_face_sim") or 0) < min_face_similarity),
+                        reverse=True)
+    noise_floor = sims_below[0] if sims_below else 0.0
+    if face_similar and noise_floor > 0:
+        best_sim = max((h.get("_face_sim") or 0) for h in face_similar)
+        if best_sim - noise_floor < MARGIN:
+            face_similar = []  # too close to the look-alike field — refuse to claim
     use = face_similar if face_similar else vm_sorted
     top = use[0] if use else vm_sorted[0]
     # A result is only confident when the face matches AND the page is citable.

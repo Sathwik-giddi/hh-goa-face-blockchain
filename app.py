@@ -260,6 +260,11 @@ async def discover_profiles_api(file: UploadFile = File(...),
                                 name: str = Query(""),
                                 context: str = Query(""),
                                 name_confidence: float = Query(0.0),
+                                company: str = Query(""),
+                                designation: str = Query(""),
+                                username: str = Query(""),
+                                education: str = Query(""),
+                                website: str = Query(""),
                                 fingerprint: str = Query("")):
     """Discover public profiles for a VERIFIED identity: the subject must be
     vault-enrolled, or a public figure confirmed by a confident verified scan
@@ -283,19 +288,19 @@ async def discover_profiles_api(file: UploadFile = File(...),
             identity = {"name": clean,
                         "confidence": round(float(name_confidence), 3),
                         "source": "verified public figure (confident scan)",
-                        "context": context.strip() or None}
+                        "context": context.strip() or None,
+                        "company": company.strip() or None,
+                        "designation": designation.strip() or None,
+                        "username": username.strip() or None,
+                        "education": education.strip() or None,
+                        "website": website.strip() or None}
         if identity is None:
             return {"skipped": True,
                     "reason": "Identity confidence insufficient.\nProfile association skipped."}
 
-        result = profile_discovery.discover_for_identity(identity)
+        result = profile_discovery.discover_for_identity(identity, identity_embedding=feat)
 
-        # Demo Mode is quarantined: synthetic records never reach a case file
-        # or any real evidence surface.
-        if result.get("demo_mode"):
-            result["saved_to_case_file"] = False
-            result["reason"] = "DEMO MODE — fixtures are isolated and never stored as evidence."
-        elif fingerprint and is_hex64(fingerprint) and result.get("profiles") is not None:
+        if fingerprint and is_hex64(fingerprint) and result.get("profiles") is not None:
             try:
                 pdir = OUTPUTS / "profiles"
                 pdir.mkdir(parents=True, exist_ok=True)

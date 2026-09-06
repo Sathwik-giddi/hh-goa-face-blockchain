@@ -489,7 +489,7 @@ if FRONTEND.exists():
 def index():
     p = FRONTEND / "index.html"
     if p.exists():
-        return FileResponse(str(p))
+        return FileResponse(str(p), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
     return JSONResponse({"hint": "frontend missing"}, status_code=500)
 
 

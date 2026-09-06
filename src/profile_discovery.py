@@ -557,8 +557,9 @@ def discover_for_identity(identity: dict, identity_embedding=None,
     for c in scored:
         if c["platform"] in statuses:
             statuses[c["platform"]]["status"] = "FOUND"
+    found_platforms = {c["platform"] for c in scored}
     for pid, st in statuses.items():
-        if st["status"] == "SEARCHED" and st["results"] == 0:
+        if st["status"] == "SEARCHED" and (st["results"] == 0 or pid not in found_platforms):
             st["status"] = "NO PUBLIC RESULT"
 
     profiles = []

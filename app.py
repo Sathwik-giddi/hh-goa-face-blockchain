@@ -83,6 +83,8 @@ def verify_api(hash: str = Query("")):
 
 @app.post("/api/scan")
 async def scan(file: UploadFile = File(...), face_index: int | None = Query(None)):
+    import time as _time
+    _t0 = _time.perf_counter()
     ct = (file.content_type or "").lower()
     ext = (Path(file.filename or "").suffix or "").lower()
     # Some clients send application/octet-stream for real images; the decode
@@ -180,6 +182,8 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
                 "no_match": True,
                 "face": face,
                 "subject_identity": subject,
+                "public_record": search.get("public_record"),
+                "elapsed_s": round(_time.perf_counter() - _t0, 1),
                 "search": {
                     "mode": search["mode"],
                     "reddit_found": search.get("reddit_found"),
@@ -233,6 +237,8 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
             "verify": verify(fingerprint, chain_file=str(CHAIN)),
             "reverify": reverify,
             "subject_identity": subject,
+            "public_record": search.get("public_record"),
+            "elapsed_s": round(_time.perf_counter() - _t0, 1),
         }
     finally:
         if tmp.exists():

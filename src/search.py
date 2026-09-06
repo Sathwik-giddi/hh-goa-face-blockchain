@@ -425,6 +425,33 @@ def reverse_image_search(
     if top_confident:
         top["_link_note"] = "source page reachable"
 
+    # Public record about the matched content — only what Google itself returned
+    # for this image, and only when the match itself is confident. Never invented.
+    public_record = None
+    if top_confident:
+        for _eng, r in raws:
+            kg = r.get("knowledge_graph")
+            if isinstance(kg, dict) and kg.get("title"):
+                public_record = {
+                    "name": kg.get("title"),
+                    "type": kg.get("type"),
+                    "description": kg.get("description"),
+                    "source": "Google knowledge panel (live Lens response)",
+                }
+                break
+        if public_record is None:
+            for _eng, r in raws:
+                org = r.get("organic_results") or []
+                if org and isinstance(org[0], dict) and org[0].get("title"):
+                    public_record = {
+                        "name": org[0].get("title"),
+                        "type": "top web result for this image",
+                        "description": org[0].get("snippet") or None,
+                        "link": org[0].get("link"),
+                        "source": "Google organic result (live Lens response)",
+                    }
+                    break
+
     reddit_found = any(
         (h.get("source") or "").lower() == "reddit" or "reddit.com" in (h.get("displayed_link") or h.get("link") or "").lower()
         for h in hits
@@ -440,9 +467,11 @@ def reverse_image_search(
         "noise_floor": noise_floor,
         "total_hits": len(hits),
     }
+
     return {
         "mode": "live",
         "raw": combined_raw,
+        "public_record": public_record,
         "visual_matches": use,
         "all_hits": vm_sorted,
         "top_match": top,

@@ -517,6 +517,17 @@ function renderNoMatch(j){
   const box=mb.firstChild;
   box.appendChild(el('div',{class:'font-semibold text-[15px] text-signal',text:'No matching public content found for this face'}));
   box.appendChild(el('div',{class:'text-[13px] text-slate mt-1.5',text:j.reason||''}));
+  if(j.public_record){
+    const prBox=el('div',{class:'mt-2.5 pt-2.5 border-t border-signal/20'});
+    prBox.appendChild(el('div',{class:'text-[10px] font-mono tracking-[0.22em] text-slate mb-1',text:'PUBLIC RECORD — '+((j.public_record.source||'').toUpperCase())}));
+    if(j.public_record.name) prBox.appendChild(el('div',{class:'font-display font-semibold text-[14px] text-ink',text:j.public_record.name+(j.public_record.type?' — '+j.public_record.type:'')}));
+    if(j.public_record.description) prBox.appendChild(el('div',{class:'text-[12px] text-slate mt-0.5',text:j.public_record.description}));
+    box.appendChild(prBox);
+  }
+  if(j.subject_identity){
+    box.appendChild(el('div',{class:'mt-2.5 inline-block text-[12px] font-medium px-2.5 py-1 border border-veridian bg-veridianSoft text-veridian',
+      text:'Identity Vault: subject recognized as “'+j.subject_identity.name+'” ('+j.subject_identity.similarity+'%) — no public source anchored'}));
+  }
   box.appendChild(el('div',{class:'text-[12px] text-slate mt-2',text:'This is the correct outcome for a face with no public footprint — the pipeline stops instead of anchoring a look-alike. Try the lena sample for a guaranteed match, or a photo whose face appears on indexed public pages.'}));
   const hits=$('#hits'); hits.innerHTML='';
   (s.hits||[]).slice(0,4).forEach(h=>{
@@ -580,6 +591,17 @@ function render(j){
   }
   if(top.title) mb.appendChild(el('div',{class:'text-slate mt-1',text:top.title}));
   if(top.link) mb.appendChild(el('div',{class:'mt-1.5 text-[13px]'},[link('open the discovered post ↗',top.link)]));
+  if(j.public_record){
+    const pr=j.public_record;
+    const prBox=el('div',{class:'mt-3 border border-line bg-paper p-3'});
+    prBox.appendChild(el('div',{class:'text-[10px] font-mono tracking-[0.22em] text-slate mb-1',text:'PUBLIC RECORD — '+((pr.source||'').toUpperCase())}));
+    if(pr.name) prBox.appendChild(el('div',{class:'font-display font-semibold text-[15px] text-ink',text:pr.name+(pr.type?' — '+pr.type:'')}));
+    if(pr.description) prBox.appendChild(el('div',{class:'text-[13px] text-slate mt-0.5',text:pr.description}));
+    mb.appendChild(prBox);
+  }
+  if(j.elapsed_s != null){
+    mb.appendChild(el('div',{class:'text-[11px] font-mono text-slate mt-2',text:'resolved in '+j.elapsed_s+'s — detection, '+((s.num_queries||1))+' live queries, recognition, anchoring, re-verification'}));
+  }
   mb.appendChild(el('div',{class:'text-[11px] font-mono text-slate mt-2', text:(s.num_queries||1)+' live queries · '+s.num_hits+' candidates · '+(s.face_similar_count||0)+' face-embedded'}));
   if(top._link_valid){
     mb.appendChild(el('div',{class:'text-[11px] font-mono text-veridian mt-0.5', text:'✓ source page reachable — '+(top._link_note||'ok')}));

@@ -166,6 +166,10 @@ tests/test_pipeline.py  (11 tests: E2E, integrity, canonicalization, multi-face,
 ```
 Note: `outputs/` is runtime evidence (result.json, face crops) — generated per run, not committed.
 
+## Search providers
+
+Primary: **Google Lens via SerpAPI**. Secondary: **Google Cloud Vision Web Detection** (Google's official image-matching API — the engine behind Lens). Set `GOOGLE_VISION_API_KEY` in `.env` (free 1,000/month) and it runs automatically whenever Lens returns no citable match, before any "no match" verdict.
+
 ## Troubleshooting
 
 | Symptom | Fix |

@@ -74,6 +74,49 @@ def _reverse_image_search(image_id: str, api_key: str, timeout: int = 30) -> dic
     return r.json()
 
 
+
+
+class ProviderError(Exception):
+    """Vision/search provider failed (rate limit, bad response)."""
+
+
+def _vision_web_detection(image_path, query_feat):
+    """Google Cloud Vision WEB_DETECTION: pages with matching images, straight
+    from Google's own index. Shaped like Lens hits so the existing ArcFace
+    scoring pipeline consumes them unchanged."""
+    api_key = os.getenv("GOOGLE_VISION_API_KEY", "").strip()
+    if not api_key:
+        return []
+    import base64
+    b64 = base64.b64encode(Path(image_path).read_bytes()).decode()
+    body = {"requests": [{"image": {"content": b64},
+                          "features": [{"type": "WEB_DETECTION", "maxResults": 25}]}]}
+    r = requests.post(
+        f"https://vision.googleapis.com/v1/images:annotate?key={api_key}",
+        json=body, timeout=30)
+    if r.status_code == 429:
+        raise ProviderError("google vision rate limited")
+    r.raise_for_status()
+    wd = (r.json().get("responses") or [{}])[0].get("webDetection", {})
+    hits = []
+    for i, pg in enumerate(wd.get("pagesWithMatchingImages") or []):
+        url = pg.get("url") or ""
+        if not url.startswith("http"):
+            continue
+        host = urlparse(url).netloc
+        img_match = ((pg.get("fullMatchingImages") or pg.get("partialMatchingImages")
+                      or [{}])[0]).get("url") or ""
+        hits.append({
+            "link": url, "url": url,
+            "title": f"Page matching this image — {host}",
+            "snippet": "", "source": host,
+            "thumbnail": img_match or url,
+            "position": i + 1,
+        })
+    return hits
+
+
+
 def _prepare_upload(image_path: Path, max_bytes: int = 480_000) -> Path:
     """SerpAPI image upload caps at 500KB — compress oversized query images.
 
@@ -384,6 +427,21 @@ def reverse_image_search(
                     break
             except Exception as e:
                 print(f"[search] no_cache retry ({label}) failed (non-fatal): {e}")
+
+    # Google Cloud Vision Web Detection — the official Google image-matching
+    # API (the engine behind Lens, sold as a product). Runs when Lens is still
+    # inconclusive and GOOGLE_VISION_API_KEY is configured; free 1000/mo.
+    if not any(_citable(h) for h in hits):
+        try:
+            vision_hits = _vision_web_detection(image_path, query_feat)
+            if vision_hits:
+                raws.append(("google_vision", {"pages": len(vision_hits)}))
+                queries.append({"image": image_path.name, "engine": "google_vision_web_detection",
+                                 "hits": len(vision_hits)})
+                _score_hits(vision_hits, query_feat)
+                hits = _merge_hits(hits, vision_hits)
+        except Exception as e:
+            print(f"[search] google vision fallback failed (non-fatal): {e}")
 
     prefer = (prefer_source or "reddit").lower()
     def rank(h):

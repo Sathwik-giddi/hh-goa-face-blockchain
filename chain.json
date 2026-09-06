@@ -1392,5 +1392,51 @@
       "face_similar_count": 43
     },
     "hash": "6fb427163f5a0593659ee9f90142f50fc2204afc7ca8a72b1f7742b0f2da642b"
+  },
+  {
+    "index": 33,
+    "timestamp": "2026-09-06T09:49:58.417969+00:00",
+    "prev_hash": "6fb427163f5a0593659ee9f90142f50fc2204afc7ca8a72b1f7742b0f2da642b",
+    "data_hash": "e08b42b5339da3929e629ff59d30defa60842b00f1a95edb222cbcd7df4e9ebf",
+    "data": {
+      "fingerprint": "f953a84abb3ae7433e297e0516cd3d85a52687fefa4a89643407537d22462e5f",
+      "mode": "evm",
+      "txHash": "0x24d6ffc797f562be9231f33c1a4c4acdb197d11e73f7cb05be527d2a793ac4e3",
+      "blockNumber": 46869757,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x24d6ffc797f562be9231f33c1a4c4acdb197d11e73f7cb05be527d2a793ac4e3",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 26,
+        "title": "Thejaswi Udupa on X: \"+1. That Duniya Vijay is as good ...",
+        "link": "https://x.com/udupendra/status/1738226355337322911",
+        "source": "x.com",
+        "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcSofvqtbDtdUTZsANJSe_PTSgsuDSmzMNykD5ePbsMk3EyTY0EoF56jNp_rHuufm9BtNpZYsFhp9M6u-DLxqcg2x-FRa41-OCrNmA",
+        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRmLmV_fs8U-2cHTsNJv1P6Cn1BaQW2m2QLXrKVQiC0tZ6wjvv_",
+        "thumbnail_width": 269,
+        "thumbnail_height": 187,
+        "image": "https://pbs.twimg.com/media/GB9rqIvWcAAenxL.jpg",
+        "image_width": 529,
+        "image_height": 369,
+        "_face_sim": 97.3,
+        "_link_valid": true,
+        "_link_note": "source page reachable",
+        "_link_final": "https://x.com/udupendra/status/1738226355337322911"
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.9493019580841064,
+        "bbox": [
+          136,
+          64,
+          103,
+          144
+        ],
+        "embedding_hash": "0038bcfefefcf87e"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 145
+    },
+    "hash": "90612d2fe3c4425706965cc4ab8189270b5812273c723d8f18c7b7a47afcc8c2"
   }
 ]

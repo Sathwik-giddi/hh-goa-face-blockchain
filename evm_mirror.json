@@ -131,6 +131,9 @@
     ],
     "fed26d3fc6dc22d8326ff9fdf200d1602ca70e63750fd92448e7e6242764117e": [
       "0x1565064414b721a2cc4239959b78e184433fb4a33d00e650417da2de47e64adc"
+    ],
+    "f953a84abb3ae7433e297e0516cd3d85a52687fefa4a89643407537d22462e5f": [
+      "0x24d6ffc797f562be9231f33c1a4c4acdb197d11e73f7cb05be527d2a793ac4e3"
     ]
   },
   "0x7febe45db85772051cd4111e4bd514572b1c6498120253c7b313c9589f766cd4": {
@@ -1261,6 +1264,42 @@
       "search_mode": "live",
       "reddit_found": true,
       "face_similar_count": 43
+    }
+  },
+  "0x24d6ffc797f562be9231f33c1a4c4acdb197d11e73f7cb05be527d2a793ac4e3": {
+    "fingerprint": "f953a84abb3ae7433e297e0516cd3d85a52687fefa4a89643407537d22462e5f",
+    "payload": {
+      "post": {
+        "position": 26,
+        "title": "Thejaswi Udupa on X: \"+1. That Duniya Vijay is as good ...",
+        "link": "https://x.com/udupendra/status/1738226355337322911",
+        "source": "x.com",
+        "source_icon": "https://encrypted-tbn0.gstatic.com/favicon-tbn?q=tbn:ANd9GcSofvqtbDtdUTZsANJSe_PTSgsuDSmzMNykD5ePbsMk3EyTY0EoF56jNp_rHuufm9BtNpZYsFhp9M6u-DLxqcg2x-FRa41-OCrNmA",
+        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRmLmV_fs8U-2cHTsNJv1P6Cn1BaQW2m2QLXrKVQiC0tZ6wjvv_",
+        "thumbnail_width": 269,
+        "thumbnail_height": 187,
+        "image": "https://pbs.twimg.com/media/GB9rqIvWcAAenxL.jpg",
+        "image_width": 529,
+        "image_height": 369,
+        "_face_sim": 97.3,
+        "_link_valid": true,
+        "_link_note": "source page reachable",
+        "_link_final": "https://x.com/udupendra/status/1738226355337322911"
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.9493019580841064,
+        "bbox": [
+          136,
+          64,
+          103,
+          144
+        ],
+        "embedding_hash": "0038bcfefefcf87e"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 145
     }
   }
 }

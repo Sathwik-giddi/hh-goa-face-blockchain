@@ -9,14 +9,15 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.face_id import detect_and_encode
+from src.face_id import detect_and_encode, face_embedding
 from src.search import reverse_image_search
-from src.utils import fingerprint_post, is_hex64, safe_filename
+from src.utils import fingerprint_post, is_hex64, safe_filename, reverify_independent, download_image
 from src.blockchain import anchor, verify
 from src.blockchain_local import _load_chain
+from src import vault
 
 app = FastAPI(title="HH Goa — Face→Social→Chain", version="5.0-arcface")
 
@@ -162,6 +163,15 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         confident = bool(search.get("top_confident")) and top.get("_face_sim") is not None \
             and top["_face_sim"] >= MIN_FACE_SIM
 
+        # Identity Vault: label WHO the subject is, stable across index rotation.
+        subject = None
+        try:
+            qfeat, _m = face_embedding(face["crop_path"])
+            if qfeat is not None:
+                subject = vault.identify(qfeat)
+        except Exception:
+            subject = None
+
         # §26: never convert "no match" into anchored look-alike evidence.
         # Stop here, honestly, before the blockchain stage.
         if not confident:
@@ -169,6 +179,7 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
             return {
                 "no_match": True,
                 "face": face,
+                "subject_identity": subject,
                 "search": {
                     "mode": search["mode"],
                     "reddit_found": search.get("reddit_found"),
@@ -185,7 +196,6 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
             }
 
         fp = fingerprint_post(top, image_path=face["crop_path"])
-        from src.utils import download_image
         post_image = download_image(top.get("thumbnail") or "", OUTPUTS / "_post_image.jpg") \
             or (download_image(top.get("image"), OUTPUTS / "_post_image.jpg") if top.get("image") else None)
         if post_image:
@@ -203,7 +213,6 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
         except Exception as e:
             raise HTTPException(500, f"anchor failed: {e}")
 
-        from src.utils import reverify_independent
         reverify = reverify_independent(fp, out_dir=OUTPUTS)
 
         return {
@@ -214,6 +223,7 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
                 "num_hits": len(vm),
                 "face_similar_count": search.get("face_similar_count"),
                 "num_queries": search.get("num_queries", 1),
+                "noise_floor": search.get("noise_floor", 0.0),
                 "confident": confident,
                 "top": top,
                 "hits": vm[:8],
@@ -222,7 +232,168 @@ async def scan(file: UploadFile = File(...), face_index: int | None = Query(None
             "receipt": receipt,
             "verify": verify(fingerprint, chain_file=str(CHAIN)),
             "reverify": reverify,
+            "subject_identity": subject,
         }
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+
+
+# ---------- Identity Vault API ----------
+@app.get("/api/identities")
+def identities():
+    return {"identities": vault.list_identities()}
+
+
+# ---------- Evidence Case File ----------
+def _b64_image(path) -> str:
+    import base64
+    return "data:image/jpeg;base64," + base64.b64encode(Path(path).read_bytes()).decode()
+
+
+@app.get("/api/bundle/{fingerprint}")
+def bundle(fingerprint: str):
+    """Downloadable, self-contained Evidence Case File (single HTML):
+    canonical record, face crop + candidate image, on-chain proof, QR to
+    Polygonscan, and instructions a judge can follow to re-verify unaided."""
+    import base64
+    import html as _html
+
+    if not is_hex64(fingerprint):
+        raise HTTPException(400, "fingerprint must be 64-hex SHA-256")
+    try:
+        chain = _load_chain(CHAIN)
+    except Exception as e:
+        raise HTTPException(500, f"chain load failed: {e}")
+
+    block = next((b for b in chain
+                  if (b.get("data") or {}).get("fingerprint") == fingerprint.lower()), None)
+    if block is None:
+        raise HTTPException(404, "fingerprint not in local chain")
+
+    data = block["data"]
+    post = data.get("post") or {}
+    face = data.get("face") or {}
+    tx_hash = data.get("txHash") or ""
+    explorer = data.get("explorerUrl") or (f"https://amoy.polygonscan.com/tx/{tx_hash}" if tx_hash else "")
+
+    # live assets: face crop from disk, candidate image re-downloaded now
+    crop_b64 = ""
+    crop_path = OUTPUTS / "face_crop.jpg"
+    if crop_path.exists():
+        crop_b64 = _b64_image(crop_path)
+    cand_b64 = ""
+    from src.utils import download_image as _dl  # noqa: local alias
+    img = _dl(post.get("thumbnail") or post.get("image") or "", OUTPUTS / "_bundle_img.jpg")
+    if img:
+        cand_b64 = _b64_image(img)
+        img.unlink(missing_ok=True)
+
+    qr_b64 = ""
+    if explorer:
+        import qrcode
+        import io as _io
+        buf = _io.BytesIO()
+        qrcode.make(explorer).save(buf, format="PNG")
+        qr_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+    v = verify(fingerprint, chain_file=str(CHAIN))
+    esc = _html.escape
+    rows = "".join(
+        f"<tr><td>{esc(k)}</td><td class='mono'>{esc(str(v_)[:160])}</td></tr>"
+        for k, v_ in [
+            ("url", post.get("url") or post.get("link") or "—"),
+            ("title", post.get("title") or "—"),
+            ("source", post.get("source") or "—"),
+            ("face engine", face.get("engine") or "—"),
+            ("detector conf", face.get("conf") or "—"),
+            ("block (local)", block.get("index")),
+            ("block hash (local)", block.get("hash")),
+            ("block time (local)", block.get("timestamp")),
+            ("tx (Amoy)", tx_hash or "—"),
+            ("verdict", "VERIFIED — on-chain record matches" if v.get("verified") else "NOT VERIFIED"),
+        ])
+
+    html = f"""<!doctype html><html><head><meta charset="utf-8"><title>Evidence Case File {esc(fingerprint[:16])}…</title>
+<style>
+ body{{font-family:Georgia,serif;background:#F6F7F9;color:#141E28;max-width:860px;margin:0 auto;padding:32px}}
+ h1{{font-size:22px;border-bottom:3px solid #141E28;padding-bottom:8px;letter-spacing:.5px}}
+ h2{{font-size:14px;text-transform:uppercase;letter-spacing:.2em;color:#5C6B7A;margin-top:28px}}
+ .mono{{font-family:"IBM Plex Mono",monospace;font-size:12px;word-break:break-all}}
+ table{{width:100%;border-collapse:collapse}} td{{border-bottom:1px solid #DAE0E6;padding:7px 6px;vertical-align:top}}
+ td:first-child{{color:#5C6B7A;width:180px}}
+ .fp{{background:#141E28;color:#fff;padding:14px;font-family:monospace;font-size:14px;word-break:break-all}}
+ .stamp{{display:inline-block;border:2px solid #0B7A63;color:#0B7A63;padding:4px 12px;font-weight:bold;letter-spacing:.15em;transform:rotate(-3deg)}}
+ img{{max-width:220px;border:1px solid #141E28}} .qr{{width:130px;height:130px}}
+ .note{{background:#E7F2EE;border-left:3px solid #0B7A63;padding:10px 12px;font-size:13px}}
+</style></head><body>
+<h1>EVIDENCE CASE FILE — HH Goa 2026 · Task 3</h1>
+<p class="stamp">{'VERIFIED' if v.get('verified') else 'NOT VERIFIED'}</p>
+<p>Case fingerprint:</p><div class="fp">{esc(fingerprint)}</div>
+
+<h2>1 · Scanned subject</h2>
+{'<img src="' + crop_b64 + '">' if crop_b64 else '<p>crop not retained</p>'}
+<p class="mono">engine: {esc(str(face.get('engine')))} · conf {esc(str(face.get('conf')))} · pHash {esc(str(face.get('embedding_hash')))}</p>
+
+<h2>2 · Discovered public source</h2>
+{'<img src="' + cand_b64 + '">' if cand_b64 else ''}
+<table>{rows}</table>
+
+<h2>3 · On-chain proof (Polygon Amoy, chainId 80002)</h2>
+<table>
+<tr><td>contract</td><td class="mono">FaceAnchor · 0x5cfA68B9508CE6a9B7Ac8c3Cf696283721485463</td></tr>
+<tr><td>explorer</td><td class="mono">{('<a href="' + esc(explorer) + '">' + esc(explorer) + '</a>') if explorer else '—'}</td></tr>
+</table>
+{'<img class="qr" src="' + qr_b64 + '" alt="QR to Polygonscan">' if qr_b64 else ''}
+
+<h2>4 · Verify this file yourself</h2>
+<div class="note">
+Open the Polygonscan link above (or scan the QR) → check the transaction's Input Data
+or the contract's <span class="mono">anchoredAt</span> read for this fingerprint:
+<span class="mono">{esc(fingerprint)}</span><br><br>
+Independent re-hash method: re-download the discovered image → re-canonicalize
+(sorted-key JSON of url, title, source, thumbnail, image_sha256, UTF-8) → SHA-256 →
+compare with the on-chain fingerprint. Any alteration of the content changes the hash
+and verification fails.
+</div>
+<p class="mono" style="margin-top:24px;color:#5C6B7A">generated {esc(datetime.now(timezone.utc).isoformat())} · this file is a rendering of on-chain and local-chain state; the chains are the source of truth</p>
+</body></html>"""
+
+    return Response(content=html, media_type="text/html",
+                    headers={"Content-Disposition": f'attachment; filename="evidence_{fingerprint[:16]}.html"'})
+
+
+@app.get("/api/qr")
+def qr(data: str = Query("")):
+    """PNG QR code for arbitrary http(s) data (used for the Polygonscan link)."""
+    import qrcode
+    import io as _io
+    if not (data.startswith("https://") or data.startswith("http://")):
+        raise HTTPException(400, "http(s) URL required")
+    buf = _io.BytesIO()
+    qrcode.make(data).save(buf, format="PNG")
+    return Response(content=buf.getvalue(), media_type="image/png")
+
+
+@app.post("/api/enroll")
+async def enroll(file: UploadFile = File(...), name: str = Query("")):
+    """Enroll a face under a label: scan → 512-D ArcFace reference in the vault."""
+    name = safe_filename(name or "").strip("._-")[:80]
+    if not name:
+        raise HTTPException(400, "Provide ?name=<person label>")
+    ct = (file.content_type or "").lower()
+    ext = (Path(file.filename or "").suffix or "").lower()
+    if not (ct.startswith("image/") or ext in {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".avif"}):
+        raise HTTPException(400, "Upload an image (jpg/png/webp/heic)")
+    tmp = UPLOADS / f"enroll_{datetime.now(timezone.utc).strftime('%H%M%S%f')}_{safe_filename(file.filename or 'img')}"
+    try:
+        with open(tmp, "wb") as f:
+            f.write(await file.read())
+        feat, method = face_embedding(tmp)
+        if feat is None:
+            raise HTTPException(422, f"no usable face in image ({method})")
+        rec = vault.enroll(name, feat)
+        return {"enrolled": True, "method": method, **rec}
     finally:
         if tmp.exists():
             tmp.unlink(missing_ok=True)

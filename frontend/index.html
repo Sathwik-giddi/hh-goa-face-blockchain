@@ -150,6 +150,20 @@ tailwind.config={theme:{extend:{
           <div id="verifyOut" class="mt-2.5 text-sm font-mono min-h-[1.4em]"></div>
           <div class="text-[11px] text-slate mt-2 font-mono">tamper check: flip the last hex char — verification must fail</div>
         </details>
+
+        <details id="enrollDetails" class="mt-3 bg-panel border border-line px-5 py-4">
+          <summary class="text-sm font-semibold cursor-pointer select-none flex items-center gap-2">
+            <span class="chev text-slate">›</span> Identity Vault — enroll a face
+          </summary>
+          <p class="text-xs text-slate mt-2">Store this person's ArcFace reference on this machine. Every future scan of them is then labeled with their name — stable proof of <i>who</i> the subject is, independent of index rotation. Search stays live; the vault only labels the subject.</p>
+          <div class="flex gap-2 mt-3">
+            <input id="enrollName" placeholder="person label (e.g. Sathwik)" maxlength="80"
+                   class="flex-1 h-11 border border-line bg-paper px-3 text-sm focus:border-veridian"/>
+            <button id="enrollBtn" class="h-11 px-5 bg-veridian text-white font-medium text-sm hover:bg-[#096B56] transition">Enroll uploaded face</button>
+          </div>
+          <div id="enrollOut" class="mt-2.5 text-sm font-mono min-h-[1.4em]"></div>
+          <div id="enrollList" class="mt-1 text-[11px] font-mono text-slate"></div>
+        </details>
       </section>
 
       <!-- ===================== results: case file ===================== -->
@@ -476,6 +490,11 @@ function renderNoMatch(j){
     const sub=l.querySelectorAll('[data-sub]')[0];
     if(sub){ sub.textContent='· not run'; }
   });
+  if(j.subject_identity){
+    const li2=ledger.querySelector('[data-stage="Face capture"]'); if(li2){
+      li2.appendChild(el('div',{class:'text-[11px] text-veridian font-medium',text:'vault: “'+j.subject_identity.name+'” ('+j.subject_identity.similarity+'%)'}));
+    }
+  }
 
   // stage 01
   $('#s1Meta').textContent=(f.engine||'')+' · conf '+(Number(f.conf)||0).toFixed(2);
@@ -488,6 +507,9 @@ function renderNoMatch(j){
   ff.appendChild(fact('engine',f.engine||'—',true));
   ff.appendChild(fact('faces detected',String(f.num_faces)));
   ff.appendChild(fact('pHash embedding',f.embedding_hash||'—',true));
+  if(j.subject_identity){
+    ff.appendChild(fact('identity vault','“'+j.subject_identity.name+'” · '+j.subject_identity.similarity+'% vs reference'));
+  }
 
   // stage 02 — honest verdict
   const mb=$('#matchBox'); mb.innerHTML='';
@@ -537,6 +559,9 @@ function render(j){
   ff.appendChild(fact('faces detected',String(f.num_faces)));
   ff.appendChild(fact('detector conf',(Number(f.conf)||0).toFixed(3)));
   ff.appendChild(fact('pHash embedding',f.embedding_hash||'—',true));
+  if(j.subject_identity){
+    ff.appendChild(fact('identity vault','“'+j.subject_identity.name+'” · '+j.subject_identity.similarity+'% vs reference'));
+  }
   stampLedger('Input scan','',t, null, 0);
   setTimeout(()=>stampLedger('Face capture',f.embedding_hash||'',t,null,0),150);
 
@@ -549,6 +574,10 @@ function render(j){
   head.appendChild(el('div',{class:'font-semibold text-[15px] text-ink',text:confident?'Matched on facial identity':'Closest indexed visual — no confident facial match'}));
   head.appendChild(el('span',{class:'font-mono text-[12px] text-slate',text:(top.source||'—')}));
   mb.appendChild(head);
+  if(j.subject_identity){
+    mb.appendChild(el('div',{class:'mt-2 inline-block text-[12px] font-medium px-2.5 py-1 border border-veridian bg-veridianSoft text-veridian',
+      text:' Identity Vault: subject recognized as “'+j.subject_identity.name+'” ('+j.subject_identity.similarity+'% vs enrolled reference)'}));
+  }
   if(top.title) mb.appendChild(el('div',{class:'text-slate mt-1',text:top.title}));
   if(top.link) mb.appendChild(el('div',{class:'mt-1.5 text-[13px]'},[link('open the discovered post ↗',top.link)]));
   mb.appendChild(el('div',{class:'text-[11px] font-mono text-slate mt-2', text:(s.num_queries||1)+' live queries · '+s.num_hits+' candidates · '+(s.face_similar_count||0)+' face-embedded'}));
@@ -569,6 +598,12 @@ function render(j){
     meterWrap.appendChild(meter);
     mb.appendChild(meterWrap);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.width=Math.min(100,sim)+'%'; }));
+    const floor = s.noise_floor != null ? s.noise_floor : 0;
+    if(floor > 0 && sim > floor){
+      const ratio = (sim / floor).toFixed(1);
+      mb.appendChild(el('div',{class:'text-[11px] font-mono text-slate mt-1.5',
+        text:'stands +'+(sim-floor).toFixed(1)+' pts above this search\u2019s look-alike field ('+floor+'%) — '+ratio+'\u00D7 the field'}));
+    }
   }
   if(!confident){
     mb.appendChild(el('div',{class:'mt-3 text-[12px] text-signal bg-signalSoft border border-signal/30 px-3 py-2',
@@ -611,6 +646,15 @@ function render(j){
       cf.appendChild(fact('contract',link(rc.contractAddress+' ↗','https://amoy.polygonscan.com/address/'+rc.contractAddress),true));
     }
     cf.appendChild(fact('dedupe',rc.deduplicated?'already anchored — no duplicate tx':'first anchor for this fingerprint'));
+    const dl = safeUrl('/api/bundle/'+fp.fingerprint_sha256);
+    if(dl) cf.appendChild(fact('case file',el('a',{href:dl,class:'font-medium text-veridian hover:underline',download:true},'⬇ Download Evidence Case File (.html)')));
+    if(rc.explorerUrl){
+      const qs = safeUrl('/api/qr?data='+encodeURIComponent(rc.explorerUrl));
+      if(qs){
+        const qrimg = el('img',{alt:'QR to Polygonscan',class:'w-[86px] h-[86px] border border-ink bg-white',src:qs});
+        cf.appendChild(fact('scan to verify',qrimg));
+      }
+    }
   } else if(rc.error){
     cf.appendChild(el('div',{class:'text-bad bg-badSoft border border-bad/30 px-3 py-2 text-[12px]',text:'Anchor failed: '+rc.error}));
   } else {
@@ -674,6 +718,33 @@ verifyBtn.addEventListener('click',async()=>{
   }catch(e){ verifyOut.innerHTML=''; verifyOut.appendChild(el('span',{class:'text-bad',text:'✗ '+(e.message||e)})); }
 });
 verifyInput.addEventListener('keydown',e=>{ if(e.key==='Enter') verifyBtn.click(); });
+
+/* ---- identity vault ---- */
+const enrollName=$('#enrollName'), enrollBtn=$('#enrollBtn'), enrollOut=$('#enrollOut'), enrollList=$('#enrollList');
+async function refreshIdentities(){
+  try{
+    const j=await getJSON('/api/identities');
+    enrollList.textContent = j.identities.length
+      ? 'enrolled: '+j.identities.map(p=>p.name).join(' · ')
+      : 'vault empty — enroll a face to label future scans';
+  }catch(e){ enrollList.textContent=''; }
+}
+refreshIdentities();
+enrollBtn.addEventListener('click',async()=>{
+  if(!fileInput.files[0]){ setText(enrollOut,'✗ upload the person\u2019s photo above first'); enrollOut.className='mt-2.5 text-sm font-mono text-bad'; return; }
+  const label=(enrollName.value||'').trim();
+  if(!label){ setText(enrollOut,'✗ enter a name label'); enrollOut.className='mt-2.5 text-sm font-mono text-bad'; return; }
+  setText(enrollOut,'enrolling…'); enrollOut.className='mt-2.5 text-sm font-mono text-slate';
+  const fd=new FormData(); fd.append('file',fileInput.files[0]);
+  try{
+    const r=await fetch('/api/enroll?name='+encodeURIComponent(label),{method:'POST',body:fd});
+    const j=await r.json().catch(()=>null);
+    if(!r.ok){ setText(enrollOut,'✗ '+((j&&(j.detail||j.error))||r.statusText)); enrollOut.className='mt-2.5 text-sm font-mono text-bad'; return; }
+    setText(enrollOut,'✓ enrolled “'+j.name+'” ('+j.method+', '+j.dimensions+'-D reference)');
+    enrollOut.className='mt-2.5 text-sm font-mono text-veridian';
+    refreshIdentities();
+  }catch(e){ setText(enrollOut,'✗ '+(e.message||e)); enrollOut.className='mt-2.5 text-sm font-mono text-bad'; }
+});
 </script>
 </body>
 </html>

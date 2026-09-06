@@ -437,6 +437,7 @@ def reverse_image_search(
         "embed_method": embed_method,
         "face_similar_count": len(face_similar),
         "link_valid_count": sum(1 for h in hits if h.get("_link_valid")),
+        "noise_floor": noise_floor,
         "total_hits": len(hits),
     }
     return {
@@ -446,6 +447,7 @@ def reverse_image_search(
         "all_hits": vm_sorted,
         "top_match": top,
         "top_confident": top_confident,
+        "noise_floor": noise_floor,
         "reddit_found": reddit_found,
         "face_similar_count": len(face_similar),
         "num_queries": len(queries),

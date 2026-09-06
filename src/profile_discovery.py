@@ -18,6 +18,10 @@ from urllib.parse import urlparse
 
 import requests
 
+def _demo_mode() -> bool:
+    return os.getenv("PROFILE_DISCOVERY_DEMO", "").strip().lower() in ("1", "true", "yes")
+
+
 IDENTITY_MIN_CONF = float(os.getenv("PROFILE_IDENTITY_MIN_CONF", "0.80"))
 CONF_HIGH = float(os.getenv("PROFILE_CONF_HIGH", "0.85"))
 CONF_MEDIUM = float(os.getenv("PROFILE_CONF_MEDIUM", "0.65"))
@@ -47,8 +51,27 @@ class ProviderError(Exception):
     """A search provider failed (network, rate limit, bad key)."""
 
 
+def _demo_provider(query: str, api_key: str, num: int = 5) -> list:
+    """Isolated Demo Mode provider — active ONLY when PROFILE_DISCOVERY_DEMO=true.
+    Clearly marked at every stage so it can never masquerade as real evidence
+    and never reaches a real Evidence Case File or the blockchain workflow."""
+    return [{
+        "_demo": True,
+        "link": "https://example.com/",
+        "title": "DEMO DATA — Example Domain (synthetic fixture, not a real discovery)",
+        "snippet": "Synthetic demo record. Shown only because Demo Mode is enabled; never evidence.",
+    }]
+    """A search provider failed (network, rate limit, bad key)."""
+
+
 def _provider():
-    """Search provider abstraction — add another provider here, nothing else changes."""
+    """Search provider abstraction — add another provider here, nothing else changes.
+
+    Demo Mode (PROFILE_DISCOVERY_DEMO=true) force-routes everything to the
+    isolated demo provider: real search is never mixed with demo fixtures.
+    """
+    if _demo_mode():
+        return _demo_provider
     provider = os.getenv("PROFILE_SEARCH_PROVIDER", "serpapi_google")
 
     def serpapi_google(query: str, api_key: str, num: int = 5) -> list:
@@ -62,7 +85,7 @@ def _provider():
         return j.get("organic_results") or []
 
     providers = {"serpapi_google": serpapi_google}
-    return providers[provider]
+    return providers.get(provider, serpapi_google)
 
 
 def _slug_variants(name: str) -> list:
@@ -97,6 +120,8 @@ def normalize_result(organic: dict) -> dict | None:
         "title": organic.get("title") or "",
         "snippet": organic.get("snippet") or "",
         "_query_platform": organic.get("_query_platform"),
+        "_discovered_via": organic.get("_discovered_via"),
+        "_demo": bool(organic.get("_demo")),
     }
 
 
@@ -221,27 +246,35 @@ def discover_for_identity(identity: dict, api_key: str | None = None,
     if conf < IDENTITY_MIN_CONF:
         return {"skipped": True, "reason": "Identity confidence insufficient.\nProfile association skipped."}
 
+    demo = _demo_mode()
     api_key = api_key or os.getenv("SERPAPI_API_KEY") or ""
-    if not api_key:
+    if not api_key and not demo:
         return {"skipped": True, "reason": "Search provider unavailable: SERPAPI_API_KEY missing."}
 
     context = identity.get("context")
     q_ctx = f' "{context}"' if context else ""
     provider = _provider()
+    provider_name = "demo" if demo else os.getenv("PROFILE_SEARCH_PROVIDER", "serpapi_google")
 
     jobs = {}
+    queries_log = []
     with ThreadPoolExecutor(max_workers=5) as ex:
         futs = {}
         for plat, cfg in list(PLATFORMS.items())[:max_platforms]:
             q = f'"{name}" {cfg["filter"]}{q_ctx}'
-            futs[ex.submit(provider, q, api_key)] = plat
+            queries_log.append(q)
+            futs[ex.submit(provider, q, api_key)] = (plat, q)
         # one general query for personal websites
-        futs[ex.submit(provider, f'"{name}" official website{q_ctx}', api_key)] = "website"
+        q_site = f'"{name}" official website{q_ctx}'
+        queries_log.append(q_site)
+        futs[ex.submit(provider, q_site, api_key)] = ("website", q_site)
         for fut in as_completed(futs):
-            plat = futs[fut]
+            plat, q = futs[fut]
             try:
-                for organic in fut.result():
+                for pos, organic in enumerate(fut.result()):
                     organic["_query_platform"] = plat
+                    organic["_discovered_via"] = {"provider": provider_name,
+                                                  "query": q, "position": organic.get("position") or pos + 1}
                     jobs[organic.get("link") or id(organic)] = organic
             except ProviderError as e:
                 print(f"[profile_discovery] {plat}: {e}")
@@ -260,19 +293,40 @@ def discover_for_identity(identity: dict, api_key: str | None = None,
                for c in candidates if not c.get("_link_ok")]
 
     profiles = rank_profiles(live)
+    demo_leak = False
     for p in profiles:
+        demo = bool(p.pop("_demo", False))
+        demo_leak = demo_leak or demo
+        via = p.pop("_discovered_via", None)
         p.pop("title", None); p.pop("snippet", None); p.pop("host", None)
         p.pop("_query_platform", None); p.pop("_link_ok", None); p.pop("_link_note", None); p.pop("_link_final", None)
+        # Provenance: kept on every profile for the View Evidence inspector.
+        p["provenance"] = {
+            "provider": (via or {}).get("provider", provider_name),
+            "query": (via or {}).get("query"),
+            "position": (via or {}).get("position"),
+            "discoveredViaUrl": p["url"],
+            "demo": demo,
+        }
         p["sourceUrls"] = [p["url"]]
         p["discoveredAt"] = datetime.now(timezone.utc).isoformat()
+        if demo:
+            dn = p.get("displayName") or ""
+            p["displayName"] = dn if dn.startswith("DEMO DATA") else "[DEMO DATA] " + dn
+            p["verificationReasons"] = ["DEMO MODE — synthetic record, not real evidence"]
 
     return {
         "identity": {"name": name, "confidence": round(conf, 3), "source": identity.get("source", "")},
+        "demo_mode": demo,
+        "demo_data": demo_leak or demo,
+        "provider": provider_name,
+        "queries": queries_log,
         "profiles": profiles,
         "dropped": dropped,
         "searched": [p for p, _ in PLATFORMS.items()][:max_platforms] + ["website"],
         "discovered_at": datetime.now(timezone.utc).isoformat(),
         "disclaimer": "Results are based on publicly available evidence and may not be exhaustive.",
+        "empty_message": "No verified public profiles discovered.",
     }
 
 
@@ -283,6 +337,8 @@ def render_case_file_section(discovery: dict) -> str:
         return ""
     e = html.escape
     ident = discovery.get("identity") or {}
+    if discovery.get("demo_mode"):
+        return ""  # demo results are never rendered into a real case file
     rows = []
     for p in discovery.get("profiles", []):
         reasons = "<br>".join("✓ " + e(r) for r in p.get("verificationReasons", []))

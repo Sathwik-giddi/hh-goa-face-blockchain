@@ -290,7 +290,12 @@ async def discover_profiles_api(file: UploadFile = File(...),
 
         result = profile_discovery.discover_for_identity(identity)
 
-        if fingerprint and is_hex64(fingerprint) and result.get("profiles") is not None:
+        # Demo Mode is quarantined: synthetic records never reach a case file
+        # or any real evidence surface.
+        if result.get("demo_mode"):
+            result["saved_to_case_file"] = False
+            result["reason"] = "DEMO MODE — fixtures are isolated and never stored as evidence."
+        elif fingerprint and is_hex64(fingerprint) and result.get("profiles") is not None:
             try:
                 pdir = OUTPUTS / "profiles"
                 pdir.mkdir(parents=True, exist_ok=True)

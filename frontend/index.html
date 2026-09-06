@@ -819,6 +819,7 @@ function pdRenderCards(profiles){
     const tone = p.confidenceLevel==='high' ? 'text-veridian border-veridian bg-veridianSoft'
                : p.confidenceLevel==='medium' ? 'text-signal border-signal bg-signalSoft'
                : 'text-slate border-line bg-paper';
+    if(p.demo) card.classList.add('opacity-70','border-dashed');
     top.appendChild(el('span',{class:'text-[11px] font-mono px-2 py-0.5 border rounded-full flex-none '+tone,
       text:Math.round(p.confidence*100)+'% '+p.confidenceLevel}));
     card.appendChild(top);
@@ -859,10 +860,16 @@ async function discoverProfiles(){
     if(j.skipped){ pdBody.textContent='✗ '+j.reason; pdBody.className='text-[13px] font-mono text-signal'; return; }
     const ident=j.identity||{};
     pdSetIdentity(ident.name, ident.confidence);
-    pdBody.className='text-[13px] text-slate';
-    pdBody.textContent = j.profiles.length
-      ? 'Discovered '+j.profiles.length+' public profile'+(j.profiles.length===1?'':'s')+' (live, evidence-scored):'
-      : 'No public profiles met the evidence bar. Nothing claimed.';
+    if(j.demo_mode){
+      pdBody.className='text-[13px] font-mono text-bad';
+      pdBody.textContent='⚠ DEMO DATA — synthetic fixtures (PROFILE_DISCOVERY_DEMO=true). Isolated: never saved as evidence, never anchored.';
+    } else {
+      pdBody.className='text-[13px] text-slate';
+      pdBody.textContent = j.profiles.length
+        ? 'Discovered '+j.profiles.length+' public profile'+(j.profiles.length===1?'':'s')+' (live, evidence-scored via '+j.provider+'):'
+        : (j.empty_message || 'No verified public profiles discovered.');
+    }
+    if(j.profiles.length===0 && !j.demo_mode){ pdCards.innerHTML=''; pdDisclaimer.textContent=j.disclaimer||''; return; }
     if(j.dropped && j.dropped.length){
       pdBody.appendChild(el('div',{class:'text-[11px] text-slate mt-1',text:j.dropped.length+' candidate(s) dropped: '+j.dropped.map(d=>d.reason).join('; ')}));
     }

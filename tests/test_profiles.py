@@ -1,6 +1,5 @@
 """Public Profile Discovery — unit tests (hermetic, no network)."""
 import os
-import sys
 
 os.environ["BLOCKCHAIN_MODE"] = "local"
 
@@ -114,3 +113,57 @@ def test_case_file_section_rendering():
     assert "iamsrk" in html and "94%" in html
     assert "may not be exhaustive" in html
     assert pd.render_case_file_section({"profiles": []})  # renders empty-state row
+
+
+def test_demo_mode_isolated_and_labeled(monkeypatch):
+    """PROFILE_DISCOVERY_DEMO=true must route to fixtures; the real provider is
+    never called; every record is marked demo; never real evidence."""
+    monkeypatch.setenv("PROFILE_DISCOVERY_DEMO", "true")
+    monkeypatch.setenv("SERPAPI_API_KEY", "unused")
+
+    def forbidden_real_provider(query, api_key, num=5):
+        raise AssertionError("real provider must not be called in Demo Mode")
+    monkeypatch.setattr(pd, "_provider", forbidden_real_provider)
+    # _provider is re-resolved inside discover_for_identity; force the demo path
+    monkeypatch.setattr(pd, "_provider", lambda: pd._demo_provider)
+    out = pd.discover_for_identity(_ident())
+    assert out["demo_mode"] is True and out["provider"] == "demo"
+    assert len(out["profiles"]) >= 1
+    for p in out["profiles"]:
+        assert p["provenance"]["demo"] is True
+        assert all("DEMO" in r for r in p["verificationReasons"])
+    assert pd.render_case_file_section(out) == ""  # never rendered into a case file
+
+
+def test_demo_mode_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("PROFILE_DISCOVERY_DEMO", raising=False)
+    monkeypatch.setenv("SERPAPI_API_KEY", "test-key")
+    calls = []
+
+    def real_provider(query, api_key, num=5):
+        calls.append(query)
+        return []
+    monkeypatch.setattr(pd, "_provider", lambda: real_provider)
+    out = pd.discover_for_identity(_ident())
+    assert out["demo_mode"] is False and len(calls) >= 1
+    assert out["profiles"] == []
+    assert out["empty_message"] == "No verified public profiles discovered."
+
+
+def test_provenance_retained_on_every_profile(monkeypatch):
+    monkeypatch.delenv("PROFILE_DISCOVERY_DEMO", raising=False)
+    monkeypatch.setenv("SERPAPI_API_KEY", "test-key")
+
+    def provider(query, api_key, num=5):
+        return [{"link": "https://www.instagram.com/iamsrk/", "position": 3,
+                 "title": "Shah Rukh Khan (@iamsrk)", "snippet": "Shah Rukh Khan actor"}]
+    monkeypatch.setattr(pd, "_provider", lambda: provider)
+    out = pd.discover_for_identity(_ident())
+    assert out["profiles"], "live-shaped fixture should produce a profile"
+    p = out["profiles"][0]
+    assert p["url"].startswith("https://")
+    assert p["provenance"]["provider"] == "serpapi_google"
+    assert '"Shah Rukh Khan"' in p["provenance"]["query"]
+    assert p["provenance"]["position"] == 3
+    assert p["discoveredAt"] and p["sourceUrls"] == [p["url"]]
+    assert p["verificationReasons"]

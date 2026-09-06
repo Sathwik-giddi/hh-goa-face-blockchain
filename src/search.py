@@ -80,7 +80,13 @@ class ProviderError(Exception):
     """Vision/search provider failed (rate limit, bad response)."""
 
 
+_VISION_DISABLED = False  # flips true on permanent auth/billing errors this session
+
+
 def _vision_web_detection(image_path, query_feat):
+    global _VISION_DISABLED
+    if _VISION_DISABLED:
+        return []
     """Google Cloud Vision WEB_DETECTION: pages with matching images, straight
     from Google's own index. Shaped like Lens hits so the existing ArcFace
     scoring pipeline consumes them unchanged."""
@@ -96,6 +102,11 @@ def _vision_web_detection(image_path, query_feat):
         json=body, timeout=30)
     if r.status_code == 429:
         raise ProviderError("google vision rate limited")
+    if r.status_code in (401, 403):
+        _VISION_DISABLED = True  # missing/billing-blocked key — stop retrying this session
+        print("[search] google vision disabled: key rejected (billing/auth). "
+              "SerpiAPI Lens remains primary.")
+        return []
     r.raise_for_status()
     wd = (r.json().get("responses") or [{}])[0].get("webDetection", {})
     hits = []

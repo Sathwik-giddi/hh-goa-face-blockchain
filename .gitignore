@@ -23,3 +23,5 @@ node_modules/
 models/*.onnx
 .pytest_cache/
 .coverage
+identities.json
+identities.json.lock

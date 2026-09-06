@@ -78,6 +78,12 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 
 **Both modes keep `chain.json` as the unified audit trail** — judges see every anchor with hash, payload, and (EVM) txHash + Polygonscan link.
 
+## Identity Vault & Evidence Case File
+
+* **Identity Vault** (`src/vault.py`, `POST /api/enroll?name=<label>`): enroll a person's ArcFace reference once (stored only on this machine — `identities.json` is gitignored; biometric templates never leave it). Every later scan then labels WHO the subject is — stable across Google's index rotation, and honest when the web has no citable copy ("subject recognized, no public source — nothing anchored"). The vault only labels the subject; the search itself stays live and untouched.
+* **Evidence Case File** (`GET /api/bundle/<fingerprint>`): a one-click, self-contained HTML case file — embedded face crop + candidate image, the canonical record, local block hash, Amoy tx + QR straight to Polygonscan, and step-by-step instructions for a stranger to re-verify the record unaided. It is a rendering of chain state; the chains remain the source of truth.
+* **Field-context honesty**: each match reports how far it stands above that search's look-alike field ("+48.9 pts above a 35% field — 2.4× the field"), so a number is never shown without its context.
+
 ## Canonicalization & fingerprint (exact procedure)
 
 The fingerprint is over the **discovered post**, canonicalized deterministically:

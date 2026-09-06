@@ -51,7 +51,13 @@ def test_pipeline_end_to_end_live_if_key():
     if not os.getenv("SERPAPI_API_KEY"):
         import pytest
         pytest.skip("SERPAPI_API_KEY not set")
-    r = run_pipeline("data/samples/lena.jpg", out_dir=TEST_OUT, chain_file=TEST_CHAIN, verbose=False)
+    try:
+        r = run_pipeline("data/samples/lena.jpg", out_dir=TEST_OUT, chain_file=TEST_CHAIN, verbose=False)
+    except RuntimeError as e:
+        if "429" in str(e) or "rate" in str(e).lower():
+            import pytest
+            pytest.skip(f"SerpAPI quota exhausted (live test): {e}")
+        raise
     assert r["face"]["num_faces"] >= 1
     assert r["search"]["mode"] == "live"
     assert len(r["search"].get("visual_matches", [])) >= 1

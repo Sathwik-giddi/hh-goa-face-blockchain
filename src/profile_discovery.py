@@ -571,7 +571,7 @@ def discover_for_identity(identity: dict, identity_embedding=None,
     profiles = []
     for c in scored:
         c["provenance"] = {"provider": c["provider"], "query": c["query"],
-                            "position": c["resultPosition"], "demo": False}
+                            "position": c["resultPosition"]}
         c["crossPlatformEvidence"] = []
         if c.get("_website_backlink"):
             c["crossPlatformEvidence"].append({"type": "website_backlink",

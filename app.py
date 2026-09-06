@@ -1,4 +1,5 @@
 """10/10 frontend API — LIVE ONLY, serves forensic luxury UI."""
+import json
 import os
 from pathlib import Path
 from datetime import datetime, timezone
@@ -18,6 +19,7 @@ from src.utils import fingerprint_post, is_hex64, safe_filename, reverify_indepe
 from src.blockchain import anchor, verify
 from src.blockchain_local import _load_chain
 from src import vault
+from src import profile_discovery
 
 app = FastAPI(title="HH Goa — Face→Social→Chain", version="5.0-arcface")
 
@@ -251,6 +253,58 @@ def identities():
     return {"identities": vault.list_identities()}
 
 
+# ---------- Public Profile Discovery (verified identities only) ----------
+@app.post("/api/discover-profiles")
+async def discover_profiles_api(file: UploadFile = File(...),
+                                face_index: int | None = Query(None),
+                                name: str = Query(""),
+                                context: str = Query(""),
+                                name_confidence: float = Query(0.0),
+                                fingerprint: str = Query("")):
+    """Discover public profiles for a VERIFIED identity: the subject must be
+    vault-enrolled, or a public figure confirmed by a confident verified scan
+    (name + name_confidence come from that scan's public_record path).
+    Unidentified strangers are refused — always."""
+    tmp = UPLOADS / f"disc_{datetime.now(timezone.utc).strftime('%H%M%S%f')}_{safe_filename(file.filename or 'img')}"
+    try:
+        with open(tmp, "wb") as f:
+            f.write(await file.read())
+        feat, method = face_embedding(tmp)
+        if feat is None:
+            raise HTTPException(422, f"no usable face in image ({method})")
+
+        identity = None
+        v = vault.identify(feat)
+        if v:
+            identity = {"name": v["name"], "confidence": round(v["similarity"] / 100, 3),
+                        "source": "identity vault"}
+        elif name.strip():
+            clean = " ".join(name.split())[:100]  # whitespace-normalize only
+            identity = {"name": clean,
+                        "confidence": round(float(name_confidence), 3),
+                        "source": "verified public figure (confident scan)",
+                        "context": context.strip() or None}
+        if identity is None:
+            return {"skipped": True,
+                    "reason": "Identity confidence insufficient.\nProfile association skipped."}
+
+        result = profile_discovery.discover_for_identity(identity)
+
+        if fingerprint and is_hex64(fingerprint) and result.get("profiles") is not None:
+            try:
+                pdir = OUTPUTS / "profiles"
+                pdir.mkdir(parents=True, exist_ok=True)
+                (pdir / f"{fingerprint.lower()}.json").write_text(
+                    json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+                result["saved_to_case_file"] = True
+            except Exception:
+                pass
+        return result
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+
+
 # ---------- Evidence Case File ----------
 def _b64_image(path) -> str:
     import base64
@@ -305,6 +359,16 @@ def bundle(fingerprint: str):
 
     v = verify(fingerprint, chain_file=str(CHAIN))
     esc = _html.escape
+
+    # Public Profile Discovery section (when this fingerprint had a run)
+    profiles_html = ""
+    pfile = OUTPUTS / "profiles" / f"{fingerprint.lower()}.json"
+    if pfile.exists():
+        try:
+            discovery = json.loads(pfile.read_text(encoding="utf-8"))
+            profiles_html = profile_discovery.render_case_file_section(discovery)
+        except Exception:
+            profiles_html = ""
     rows = "".join(
         f"<tr><td>{esc(k)}</td><td class='mono'>{esc(str(v_)[:160])}</td></tr>"
         for k, v_ in [
@@ -352,6 +416,7 @@ def bundle(fingerprint: str):
 </table>
 {'<img class="qr" src="' + qr_b64 + '" alt="QR to Polygonscan">' if qr_b64 else ''}
 
+{profiles_html}
 <h2>4 · Verify this file yourself</h2>
 <div class="note">
 Open the Polygonscan link above (or scan the QR) → check the transaction's Input Data

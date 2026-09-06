@@ -225,6 +225,22 @@ tailwind.config={theme:{extend:{
           </header>
           <div id="reverifyFacts" class="text-[13px] leading-6"></div>
         </article>
+
+        <article class="stage" id="profilesStage">
+          <header class="flex items-baseline gap-4 border-b border-ink/80 pb-2 mb-4">
+            <span class="font-mono text-[12px] text-slate">06</span>
+            <h2 class="font-display font-semibold text-lg tracking-tight">Public profiles</h2>
+            <span class="ml-auto text-[11px] font-mono text-slate">verified identity only</span>
+          </header>
+          <div class="bg-paper border border-line p-4 mb-4">
+            <div class="text-[10px] font-mono tracking-[0.22em] text-slate">VERIFIED IDENTITY</div>
+            <div class="font-display font-semibold text-[16px] text-ink mt-0.5" id="pdIdentity">—</div>
+            <div class="text-[11px] font-mono text-slate mt-0.5">Identity confidence <b class="text-veridian" id="pdConf">—</b></div>
+          </div>
+          <div id="pdBody" class="text-[13px] text-slate">Complete a verified scan to discover this person's public profiles.</div>
+          <div id="pdCards" class="mt-3 space-y-2.5"></div>
+          <div class="text-[11px] text-slate mt-3" id="pdDisclaimer"></div>
+        </article>
       </section>
     </div>
 
@@ -265,7 +281,8 @@ const drop=$('#drop'), fileInput=$('#fileInput'), preview=$('#preview'), preview
       facePick=$('#facePick'), facePickTitle=$('#facePickTitle'), facePickGrid=$('#facePickGrid'),
       verifyInput=$('#verifyInput'), verifyBtn=$('#verifyBtn'), verifyOut=$('#verifyOut'),
       heightEl=$('#height'), chainList=$('#chainList'), health=$('#health'), ledger=$('#ledger'),
-      results=$('#results');
+      results=$('#results'),
+      pdIdentity=$('#pdIdentity'), pdConf=$('#pdConf'), pdBody=$('#pdBody'), pdCards=$('#pdCards'), pdDisclaimer=$('#pdDisclaimer');
 
 let previewUrl=null;
 const HEX64=/^[0-9a-fA-F]{64}$/;
@@ -470,6 +487,17 @@ async function runScan(faceIndex){
   verifyInput.value=j.fingerprint.fingerprint_sha256;
   healthCheck();
   scanBtn.disabled=false;
+
+  // Public Profile Discovery — only for a verified identity
+  lastScan.faceIndex = faceIndex;
+  lastScan.fingerprint = j.fingerprint.fingerprint_sha256;
+  const pr = j.public_record;
+  const subj = j.subject_identity;
+  let runIt = false;
+  if(subj && subj.similarity >= 80){ lastScan.name = subj.name; lastScan.confidence = subj.similarity/100; runIt = true; }
+  else if(pr && pr.name && confident){ lastScan.name = pr.name; lastScan.confidence = (j.search.top._face_sim||0)/100; lastScan.context = pr.description||''; runIt = true; }
+  if(runIt) discoverProfiles();
+  else { pdBody.className='text-[13px] font-mono text-signal'; pdBody.textContent='Identity confidence insufficient.\nProfile association skipped.'; }
 }
 
 function renderNoMatch(j){
@@ -743,6 +771,8 @@ verifyInput.addEventListener('keydown',e=>{ if(e.key==='Enter') verifyBtn.click(
 
 /* ---- identity vault ---- */
 const enrollName=$('#enrollName'), enrollBtn=$('#enrollBtn'), enrollOut=$('#enrollOut'), enrollList=$('#enrollList');
+let lastScan = {faceIndex: null, name: "", context: "", confidence: 0, fingerprint: ""};
+
 async function refreshIdentities(){
   try{
     const j=await getJSON('/api/identities');
@@ -767,6 +797,82 @@ enrollBtn.addEventListener('click',async()=>{
     refreshIdentities();
   }catch(e){ setText(enrollOut,'✗ '+(e.message||e)); enrollOut.className='mt-2.5 text-sm font-mono text-bad'; }
 });
+
+/* ---- public profile discovery (verified identity only) ---- */
+function pdSetLoading(step){
+  const msgs=['Searching public sources…','Verifying candidate profiles…','Ranking evidence…'];
+  pdBody.innerHTML=''; pdBody.className='text-[13px] font-mono text-slate';
+  pdBody.appendChild(el('div',{text:'› '+(msgs[step%3])}));
+}
+function pdSetIdentity(name,conf){
+  pdIdentity.textContent = name || '—';
+  pdConf.textContent = conf!=null ? (Math.round(conf*1000)/10)+'%' : '—';
+}
+function pdRenderCards(profiles){
+  pdCards.innerHTML='';
+  for(const p of profiles){
+    const card=el('div',{class:'border border-line bg-white p-3'});
+    const top=el('div',{class:'flex items-baseline justify-between gap-3'});
+    top.appendChild(el('div',{class:'font-semibold text-ink text-[14px]'},
+      [el('span',{class:'font-mono text-[11px] text-slate mr-2',text:p.platform}),
+       document.createTextNode((p.displayName||p.username||p.url).slice(0,52))]));
+    const tone = p.confidenceLevel==='high' ? 'text-veridian border-veridian bg-veridianSoft'
+               : p.confidenceLevel==='medium' ? 'text-signal border-signal bg-signalSoft'
+               : 'text-slate border-line bg-paper';
+    top.appendChild(el('span',{class:'text-[11px] font-mono px-2 py-0.5 border rounded-full flex-none '+tone,
+      text:Math.round(p.confidence*100)+'% '+p.confidenceLevel}));
+    card.appendChild(top);
+    if(p.username) card.appendChild(el('div',{class:'font-mono text-[11px] text-slate mt-0.5',text:'@'+p.username}));
+    const reasons=el('ul',{class:'mt-1.5 space-y-0.5'});
+    (p.verificationReasons||[]).forEach(r=>reasons.appendChild(el('li',{class:'text-[11px] text-slate',text:'✓ '+r})));
+    card.appendChild(reasons);
+    const src=safeUrl(p.url);
+    const btns=el('div',{class:'flex gap-3 mt-2'});
+    if(src) btns.appendChild(el('a',{href:src,target:'_blank',rel:'noopener noreferrer',class:'text-[12px] text-veridian hover:underline',text:'Open Profile ↗'}));
+    btns.appendChild(el('button',{class:'text-[12px] text-slate hover:text-ink',onclick:()=>{
+      const blob=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});
+      const a=el('a',{href:URL.createObjectURL(blob),download:p.platform+'_evidence.json'});
+      document.body.appendChild(a); a.click(); a.remove();
+    }},[document.createTextNode('View Evidence ⬇')]));
+    card.appendChild(btns);
+    pdCards.appendChild(card);
+  }
+}
+async function discoverProfiles(){
+  if(!fileInput.files[0]) return;
+  pdBody.className='text-[13px] font-mono text-slate';
+  pdCards.innerHTML='';
+  pdSetLoading(0);
+  const fd=new FormData(); fd.append('file',fileInput.files[0]);
+  const qs=new URLSearchParams();
+  if(lastScan.faceIndex!=null) qs.set('face_index',lastScan.faceIndex);
+  if(lastScan.name) qs.set('name',lastScan.name);
+  if(lastScan.context) qs.set('context',lastScan.context);
+  if(lastScan.confidence) qs.set('name_confidence',lastScan.confidence);
+  if(lastScan.fingerprint) qs.set('fingerprint',lastScan.fingerprint);
+  setTimeout(()=>{ if(pdBody.textContent.startsWith('› Searching')) pdSetLoading(1); },6000);
+  setTimeout(()=>{ if(pdBody.textContent.startsWith('› Verifying')) pdSetLoading(2); },14000);
+  try{
+    const r=await fetch('/api/discover-profiles?'+qs.toString(),{method:'POST',body:fd});
+    const j=await r.json().catch(()=>null);
+    if(!r.ok){ pdBody.textContent='✗ '+((j&&(j.detail||j.error))||r.statusText); return; }
+    if(j.skipped){ pdBody.textContent='✗ '+j.reason; pdBody.className='text-[13px] font-mono text-signal'; return; }
+    const ident=j.identity||{};
+    pdSetIdentity(ident.name, ident.confidence);
+    pdBody.className='text-[13px] text-slate';
+    pdBody.textContent = j.profiles.length
+      ? 'Discovered '+j.profiles.length+' public profile'+(j.profiles.length===1?'':'s')+' (live, evidence-scored):'
+      : 'No public profiles met the evidence bar. Nothing claimed.';
+    if(j.dropped && j.dropped.length){
+      pdBody.appendChild(el('div',{class:'text-[11px] text-slate mt-1',text:j.dropped.length+' candidate(s) dropped: '+j.dropped.map(d=>d.reason).join('; ')}));
+    }
+    pdRenderCards(j.profiles);
+    pdDisclaimer.textContent = j.disclaimer || '';
+  }catch(e){
+    pdBody.textContent='✗ profile search failed: '+(e.message||e);
+    pdBody.className='text-[13px] font-mono text-bad';
+  }
+}
 </script>
 </body>
 </html>

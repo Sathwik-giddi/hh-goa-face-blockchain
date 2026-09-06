@@ -78,6 +78,16 @@ python -m src.pipeline --verify <64-hex> --chain chain.json
 
 **Both modes keep `chain.json` as the unified audit trail** — judges see every anchor with hash, payload, and (EVM) txHash + Polygonscan link.
 
+## Public Profile Discovery (verified identities only)
+
+After identity verification succeeds — via the Identity Vault (consented) or a confidently verified public figure — the pipeline can discover that person's **public profiles** across LinkedIn, Instagram, X, Facebook, YouTube, GitHub, TikTok, Reddit and personal websites (provider-abstraction based; `PROFILE_SEARCH_PROVIDER` env switches providers).
+
+* Queries are generated from the verified name (+ public context when available); a name match alone is never sufficient evidence.
+* Every candidate is scored transparently (exact name / username consistency / professional context / official page format / dedicated-search provenance) into `high ≥0.85 · medium ≥0.65 · low` — thresholds configurable via env. Each score ships human-readable reasons.
+* Content URLs (posts, reels, repo files, gists) are rejected; only root profile pages count. Dead/deleted pages are dropped and reported. Two live same-platform profiles → both downgraded "Ambiguous — unconfirmed" rather than guessed.
+* The UI section renders **only** for verified identities, headed "Public profiles discovered" with the disclaimer *"Results are based on publicly available evidence and may not be exhaustive."* Unverified subjects get: "Identity confidence insufficient. Profile association skipped."
+* Discovery results are persisted per fingerprint and added to the Evidence Case File.
+
 ## Identity Vault & Evidence Case File
 
 * **Identity Vault** (`src/vault.py`, `POST /api/enroll?name=<label>`): enroll a person's ArcFace reference once (stored only on this machine — `identities.json` is gitignored; biometric templates never leave it). Every later scan then labels WHO the subject is — stable across Google's index rotation, and honest when the web has no citable copy ("subject recognized, no public source — nothing anchored"). The vault only labels the subject; the search itself stays live and untouched.

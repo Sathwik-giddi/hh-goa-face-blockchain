@@ -5,7 +5,6 @@ requests>=2.31,<3
 python-dotenv>=1.0
 Pillow>=10.0
 pillow-heif>=0.13  # iPhone HEIC/HEIF photos
-tqdm>=4.66
 
 # EVM (Polygon Amoy) — free faucet
 web3>=6.11,<7

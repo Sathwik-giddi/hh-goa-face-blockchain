@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "ports": {"preview": 3000, "additional": {}},
+  "scripts": {
+    "setup": {
+      "enabled": true,
+      "command": "python3 -m venv .venv && apt-get update >/dev/null 2>&1 && apt-get install -y python3-dev git-lfs >/dev/null 2>&1 && .venv/bin/pip install -r requirements.txt pytest httpx"
+    },
+    "run": {"enabled": true, "command": null},
+    "archive": {"enabled": true, "command": null},
+    "check": {"enabled": true, "command": ".venv/bin/python -m pytest tests/ -q"}
+  },
+  "mcpServers": []
+}

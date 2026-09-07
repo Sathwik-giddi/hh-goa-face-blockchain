@@ -1438,5 +1438,51 @@
       "face_similar_count": 145
     },
     "hash": "90612d2fe3c4425706965cc4ab8189270b5812273c723d8f18c7b7a47afcc8c2"
+  },
+  {
+    "index": 34,
+    "timestamp": "2026-09-07T14:06:21.052498+00:00",
+    "prev_hash": "90612d2fe3c4425706965cc4ab8189270b5812273c723d8f18c7b7a47afcc8c2",
+    "data_hash": "f8a387d3a7f6b579873b0aa10f0d2fe0fa6832d15dfed52eed240f3610ae3f43",
+    "data": {
+      "fingerprint": "ae282939d71ec639f789581ac2fba2953a612a2c139a836bdfa843341a3bc055",
+      "mode": "evm",
+      "txHash": "0x613fc809717950a503923db82955292826046c4bfcf691e40061a4217dfce41c",
+      "blockNumber": 46971539,
+      "explorerUrl": "https://amoy.polygonscan.com/tx/0x613fc809717950a503923db82955292826046c4bfcf691e40061a4217dfce41c",
+      "from": "0x98a9053A89C56F7a0EBbcBb003946ee5b53757fb",
+      "post": {
+        "position": 1,
+        "title": "Shah Rukh Khan - Actor, Producer",
+        "link": "https://www.tvinsider.com/people/shah-rukh-khan/",
+        "source": "TV Insider",
+        "source_icon": "https://serpapi.com/searches/6a9ec4b8e642507af270f939/images/IfJGfQ-5bZPSXquuO12OnSn8v9OyCLg_MW1EUxozAzk.png",
+        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3RhYWaTk0kc_SAIJsJmbp90tOsVBMU6eSbNgsuAcxBRxAJu84",
+        "thumbnail_width": 259,
+        "thumbnail_height": 194,
+        "image": "https://media.baselineresearch.com/images/2149911/2149911_full.jpg",
+        "image_width": 1000,
+        "image_height": 750,
+        "_face_sim": 96.5,
+        "_link_valid": true,
+        "_link_note": "source page reachable",
+        "_link_final": "https://www.tvinsider.com/people/shah-rukh-khan/"
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.949647843837738,
+        "bbox": [
+          121,
+          106,
+          208,
+          285
+        ],
+        "embedding_hash": "80083c9edfcfe3e6"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 118
+    },
+    "hash": "161e09a85877855b93a9e9f5f052a1fd002900a36fce679bc7fda75e72450d06"
   }
 ]

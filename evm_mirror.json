@@ -134,6 +134,9 @@
     ],
     "f953a84abb3ae7433e297e0516cd3d85a52687fefa4a89643407537d22462e5f": [
       "0x24d6ffc797f562be9231f33c1a4c4acdb197d11e73f7cb05be527d2a793ac4e3"
+    ],
+    "ae282939d71ec639f789581ac2fba2953a612a2c139a836bdfa843341a3bc055": [
+      "0x613fc809717950a503923db82955292826046c4bfcf691e40061a4217dfce41c"
     ]
   },
   "0x7febe45db85772051cd4111e4bd514572b1c6498120253c7b313c9589f766cd4": {
@@ -1300,6 +1303,42 @@
       "search_mode": "live",
       "reddit_found": true,
       "face_similar_count": 145
+    }
+  },
+  "0x613fc809717950a503923db82955292826046c4bfcf691e40061a4217dfce41c": {
+    "fingerprint": "ae282939d71ec639f789581ac2fba2953a612a2c139a836bdfa843341a3bc055",
+    "payload": {
+      "post": {
+        "position": 1,
+        "title": "Shah Rukh Khan - Actor, Producer",
+        "link": "https://www.tvinsider.com/people/shah-rukh-khan/",
+        "source": "TV Insider",
+        "source_icon": "https://serpapi.com/searches/6a9ec4b8e642507af270f939/images/IfJGfQ-5bZPSXquuO12OnSn8v9OyCLg_MW1EUxozAzk.png",
+        "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3RhYWaTk0kc_SAIJsJmbp90tOsVBMU6eSbNgsuAcxBRxAJu84",
+        "thumbnail_width": 259,
+        "thumbnail_height": 194,
+        "image": "https://media.baselineresearch.com/images/2149911/2149911_full.jpg",
+        "image_width": 1000,
+        "image_height": 750,
+        "_face_sim": 96.5,
+        "_link_valid": true,
+        "_link_note": "source page reachable",
+        "_link_final": "https://www.tvinsider.com/people/shah-rukh-khan/"
+      },
+      "face": {
+        "engine": "opencv:yunet",
+        "conf": 0.949647843837738,
+        "bbox": [
+          121,
+          106,
+          208,
+          285
+        ],
+        "embedding_hash": "80083c9edfcfe3e6"
+      },
+      "search_mode": "live",
+      "reddit_found": true,
+      "face_similar_count": 118
     }
   }
 }
